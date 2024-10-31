@@ -1,0 +1,115 @@
+name: build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  clang-format:
+
+    name: ClangFormat check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    - name: Format code
+      run: find src/ test/ -iname '*.c' -or -iname '*.cpp' -or -iname '*.m' -or -iname '*.mm' -or -iname '*.h' -or -iname '*.hpp' | xargs clang-format -i -style=file
+    - name: Check diff
+      run: git diff --exit-code
+
+  line-endings:
+
+    name: Line endings check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    - name: Install Dependencies
+      run: sudo apt-get update && sudo apt-get install dos2unix
+    - name: Convert to Unix line endings
+      run: dos2unix */*
+    - name: Check diff
+      run: git diff --exit-code
+
+  build-gcc:
+    
+    name: GCC - C++${{ matrix.cppstd }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        cppstd: [20, 23]
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        submodules: true
+    - name: Configure
+      run: mkdir build && mkdir install && cd build && cmake -DCMAKE_INSTALL_PREFIX="../install" -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_STANDARD=${{ matrix.cppstd }} -DCMAKE_CXX_FLAGS="-Wall -Wextra -Wshadow -Werror -pedantic -fconcepts-diagnostics-depth=5" ..
+    - name: Build
+      run: cmake --build build --target install
+    - name: Test
+      run: build/test/unit_test
+    - name: Upload test binaries
+      uses: actions/upload-artifact@v4
+      with:
+        name: GCC - C++${{ matrix.cppstd }}
+        path: build/test/*
+
+  build-clang:
+    
+    name: Clang - C++${{ matrix.cppstd }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        cppstd: [20, 23]
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        submodules: true
+    - name: Configure
+      run: mkdir build && mkdir install && cd build && cmake -DCMAKE_INSTALL_PREFIX="../install" -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_STANDARD=${{ matrix.cppstd }} -DCMAKE_CXX_FLAGS="-Wall -Wextra -Wshadow -Werror -pedantic" ..
+    - name: Build
+      run: cmake --build build --target install
+    - name: Test
+      run: build/test/unit_test
+    - name: Upload test binaries
+      uses: actions/upload-artifact@v4
+      with:
+        name: Clang - C++${{ matrix.cppstd }}
+        path: build/test/*
+  
+  build-msvc:
+
+    name: MSVC - C++${{ matrix.cppstd }}
+    runs-on: windows-latest
+
+    strategy:
+      matrix:
+        cppstd: [20, 23]
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        submodules: true
+    - name: Configure
+      run: mkdir build && mkdir install && cd build && cmake -DCMAKE_INSTALL_PREFIX="../install" -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_STANDARD=${{ matrix.cppstd }} ..
+    - name: Build
+      run: cmake --build build --target install --config Release
+    - name: Test
+      run: build/test/Release/unit_test.exe
+    - name: Upload test binaries
+      uses: actions/upload-artifact@v4
+      with:
+        name: MSVC - C++${{ matrix.cppstd }}
+        path: |
+          build/test/Release/*
