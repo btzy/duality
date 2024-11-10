@@ -8,6 +8,7 @@ set(TEST_LIST
   viewifiers/contiguous.cpp
   viewifiers/forward_list.cpp
   views/as_input_range.cpp
+  views/concat.cpp
   views/filter.cpp
   views/mixed.cpp
   # views/range_based_for_loop.cpp
