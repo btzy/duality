@@ -8,7 +8,7 @@
 #include <duality/factories/repeat.hpp>
 #include <duality/viewifiers/forward_list.hpp>
 #include <duality/viewifiers/vector.hpp>
-// #include <duality/views/as_const.hpp>
+#include <duality/views/as_const.hpp>
 #include <duality/views/concat.hpp>
 #include "../view_assert.hpp"
 
@@ -75,7 +75,6 @@ TEST_CASE("concat view", "[view concat]") {
         view_assert_multipass_forward(v, {1, 2, 3, 4, 5, 9, 8, 7, 101, 102, 103, 104, 105});
     }
 
-    /*
     SECTION("vector, infinite, vector") {
         auto v1 = viewify(vec1);
         auto v3 = viewify(vec2);
@@ -91,5 +90,4 @@ TEST_CASE("concat view", "[view concat]") {
         static_assert(std::same_as<view_element_type_t<decltype(v)>, const int&>);
         view_assert_infinite_random_access(v, {1, 2, 3, 4, 5, 88, 88, 88});
     }
-    */
 }

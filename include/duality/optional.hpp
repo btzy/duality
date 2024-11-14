@@ -56,6 +56,11 @@ class optional<T&> {
     constexpr explicit operator bool() const noexcept { return opt_; }
     constexpr T* operator->() const noexcept { return opt_; }
     constexpr T& operator*() const noexcept { return *opt_; }
+    constexpr operator optional<const T&>() const noexcept
+        requires(!std::is_const_v<T>)
+    {
+        return optional<const T&>(*opt_);
+    }
 };
 
 template <typename T>
@@ -78,6 +83,11 @@ class optional<T&&> {
     constexpr T* operator->() const noexcept { return opt_; }
     constexpr T& operator*() const& noexcept { return std::move(*opt_); }
     constexpr T&& operator*() const&& noexcept { return std::move(*opt_); }
+    constexpr operator optional<const T&&>() const noexcept
+        requires(!std::is_const_v<T>)
+    {
+        return optional<const T&&>(*opt_);
+    }
 };
 
 // Type trait to detect if T is a optional.

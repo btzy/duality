@@ -146,6 +146,7 @@ struct is_concat_random_access_view<> : std::true_type {};
 template <random_access_view V, view... Vs>
 struct is_concat_random_access_view<V, Vs...> : is_concat_random_access_view<Vs...> {};
 template <infinite_random_access_view V, view... Vs>
+    requires(!random_access_view<V>)
 struct is_concat_random_access_view<V, Vs...> : std::true_type {};
 template <typename... Vs>
 constexpr bool is_concat_random_access_view_v = is_concat_random_access_view<Vs...>::value;
@@ -1220,7 +1221,7 @@ struct concat {
         // view.  This is fine as it is never possible to access anything after the first infinite
         // view.
         using Tuple = std::tuple<V&&, Vs&&...>;
-        Tuple viewrefs(v, vs...);
+        Tuple viewrefs(std::forward<V>(v), std::forward<Vs>(vs)...);
         constexpr size_t num_reduced_views = reduced_view_count_v<V, Vs...>;
         return [&]<size_t... I>(std::index_sequence<I...>) {
             return concat_view(
