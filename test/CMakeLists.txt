@@ -11,6 +11,7 @@ set(TEST_LIST
   views/as_input_range.cpp
   views/concat.cpp
   views/filter.cpp
+  views/lazy_take.cpp
   views/mixed.cpp
   # views/range_based_for_loop.cpp
   views/reverse.cpp
