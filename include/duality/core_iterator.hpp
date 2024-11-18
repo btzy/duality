@@ -30,6 +30,10 @@ concept iterator = std::movable<I> && requires(I&& i) {
 ///
 /// Here, _at the same location_ means that calling any flavours of next and skip will yield the
 /// same elements on both iterators.
+///
+/// After the iterator fails to produce a value (i.e. next(s) returns nullopt or skip(s) returns
+/// false), this iterator will be in an unspecified state, suitable only for reassignment or
+/// destruction.
 template <typename S, typename I>
 concept sentinel_for = requires(const S& s, I&& i) {
     { i.next(s) } -> std::same_as<optional<decltype(i.next())>>;
@@ -52,6 +56,10 @@ concept reversible_iterator = multipass_iterator<I> && requires(const I& i) {
 
 /// Concept for a random access iterator (i.e. one that can skip any number of elements in constant
 /// time).
+///
+/// A skip(index, s) operation that returns a value less than index will be an iterator to the end
+/// of the view.  If this iterator is multipass, then inverting the iterator will yield a sentinel
+/// equivalent to s.
 template <typename I>
 concept random_access_iterator =
     reversible_iterator<I> && reversible_iterator<decltype(std::declval<I>().invert())> &&
