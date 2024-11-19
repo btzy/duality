@@ -9,6 +9,57 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+template <typename ViewMaker>
+inline void view_assert_forward_singlepass(
+    ViewMaker&& view_maker,
+    const std::vector<
+        std::remove_cvref_t<duality::view_element_type_t<std::invoke_result_t<ViewMaker>>>>&
+        expected) {
+    // forward check
+    {
+        auto v = view_maker();
+        auto it = expected.begin();
+        auto fit = v.forward_iter();
+        const auto rit = v.backward_iter();
+        while (auto opt = fit.next(rit)) {
+            REQUIRE(it != expected.end());
+            CHECK(*opt == *it++);
+        }
+        CHECK(it == expected.end());
+    }
+
+    {
+        auto v = view_maker();
+        auto it = expected.begin();
+        auto fit = v.forward_iter();
+        const auto rit = v.backward_iter();
+        while (fit.skip(rit)) {
+            REQUIRE(it != expected.end());
+            ++it;
+        }
+        CHECK(it == expected.end());
+    }
+
+    {
+        auto v = view_maker();
+        auto fit = v.forward_iter();
+        for (auto&& x : expected) {
+            REQUIRE(fit.next() == x);
+        }
+        CHECK_FALSE(fit.next(v.backward_iter()));
+    }
+
+    {
+        auto v = view_maker();
+        auto fit = v.forward_iter();
+        for (auto&& x : expected) {
+            (void)x;
+            fit.skip();
+        }
+        CHECK_FALSE(fit.skip(v.backward_iter()));
+    }
+}
+
 template <typename V>
 inline void view_assert_forward(
     V&& v,

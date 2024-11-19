@@ -18,27 +18,37 @@
 
 namespace duality {
 
+template <typename V>
+concept const_iterable_view = std::move_constructible<std::remove_cvref_t<V>> &&
+                              (
+                                  requires(const V& v) {
+                                      { v.forward_iter() } -> iterator;
+                                      {
+                                          v.backward_iter()
+                                      } -> sentinel_for<decltype(v.forward_iter())>;
+                                  } ||
+                                  requires(const V& v) {
+                                      {
+                                          v.forward_iter()
+                                      } -> sentinel_for<decltype(v.backward_iter())>;
+                                      { v.backward_iter() } -> iterator;
+                                  });
+
 /// A forward_view is a view whose elements can be streamed in sequence.
 template <typename V>
-concept forward_view =
-    std::move_constructible<std::remove_cvref_t<V>> && requires(const V& v, V&& v_mut) {
-        { v.forward_iter() } -> iterator;
-        { v.backward_iter() } -> sentinel_for<decltype(v.forward_iter())>;
-        { v_mut.forward_iter() } -> iterator;
-        { v_mut.backward_iter() } -> sentinel_for<decltype(v_mut.forward_iter())>;
-    };
+concept forward_view = std::move_constructible<std::remove_cvref_t<V>> && requires(V&& v) {
+    { v.forward_iter() } -> iterator;
+    { v.backward_iter() } -> sentinel_for<decltype(v.forward_iter())>;
+};
 
 /// A backward_view is a view whose elements can be streamed in sequence backwards.  There are
 /// unlikely to be any containers that can be converted to a backward_view that is not also a
 /// forward_view, but this may be synthesised by reversing a forward_view.
 template <typename V>
-concept backward_view =
-    std::move_constructible<std::remove_cvref_t<V>> && requires(const V& v, V&& v_mut) {
-        { v.backward_iter() } -> iterator;
-        { v.forward_iter() } -> sentinel_for<decltype(v.backward_iter())>;
-        { v_mut.backward_iter() } -> iterator;
-        { v_mut.forward_iter() } -> sentinel_for<decltype(v_mut.backward_iter())>;
-    };
+concept backward_view = std::move_constructible<std::remove_cvref_t<V>> && requires(V&& v) {
+    { v.backward_iter() } -> iterator;
+    { v.forward_iter() } -> sentinel_for<decltype(v.backward_iter())>;
+};
 
 /// This is the weakest view requirement.  No view or operation requires exactly this concept, but
 /// this concept is used to constrain some things that should only work with views.

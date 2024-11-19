@@ -51,8 +51,6 @@ class forward_list_backward_iterator;
 
 class forward_list_backward_iterator_zero_sized {};
 
-// TODO write the iterators
-
 /// @brief Represents a forward iterator of a forward_list.
 /// @tparam It The underlying standard forward iterator.
 template <typename It>

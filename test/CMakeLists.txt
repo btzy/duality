@@ -7,6 +7,7 @@ set(TEST_LIST
   # operations/to.cpp
   viewifiers/contiguous.cpp
   viewifiers/forward_list.cpp
+  viewifiers/istream.cpp
   views/as_const.cpp
   views/as_input_range.cpp
   views/concat.cpp

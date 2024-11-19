@@ -7,6 +7,8 @@
 namespace duality {
 using nullopt_t = std::nullopt_t;
 constexpr inline nullopt_t nullopt = std::nullopt;
+using in_place_t = std::in_place_t;
+constexpr inline in_place_t in_place = std::in_place;
 
 /// An optional type that also supports references.  Ideally, this type shouldn't be movable, but
 /// due to C++ limitations it has to be.
@@ -22,7 +24,10 @@ class optional {
     constexpr optional(nullopt_t) : opt_() {}
     template <typename... Args>
         requires std::constructible_from<T, Args...>
-    constexpr optional(Args&&... args) : opt_(std::forward<Args>(args)...) {}
+    constexpr optional(Args&&... args) : opt_(in_place, std::forward<Args>(args)...) {}
+    template <typename... Args>
+        requires std::constructible_from<T, Args...>
+    constexpr optional(in_place_t, Args&&... args) : opt_(in_place, std::forward<Args>(args)...) {}
     constexpr optional(optional&& other) = default;
     constexpr optional(const optional& other) = default;
     constexpr optional& operator=(optional&& other) = delete;
