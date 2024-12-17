@@ -11,6 +11,8 @@
 #include <duality/builtin_assume.hpp>
 #include <duality/core_view.hpp>
 
+// TODO: requires new view reification
+
 /// Implementation for views::concat.  Concatenates one or more views together.
 ///
 /// E.g.:
@@ -22,8 +24,8 @@
 ///
 /// For each concept C in {forward_view, backward_view, multipass_forward_view,
 /// multipass_backward_view, bidirectional_view, multipass_bidirectional_view, emptyness_view,
-/// sized_view, random_access_view, finite_random_access_view}, the resultant view satisfies C if
-/// all the views in R satisfies C.
+/// sized_view, random_access_bidirectional_view}, the resultant view
+/// satisfies C if all the views in R satisfies C.
 ///
 /// The resultant view satisfies infinite_view if at least one view in R satisfies infinite_view.
 ///
@@ -106,7 +108,7 @@ constexpr decltype(auto) visit_with_index(F&&, Variant&& v, Args&&... args) {
 template <typename... Vs>
 concept views = (... && view<Vs>);
 template <typename... Vs>
-concept random_access_views = views<Vs...> && (... && random_access_view<Vs>);
+concept random_access_views = views<Vs...> && (... && random_access_bidirectional_view<Vs>);
 template <typename... Vs>
 concept iterators = (... && iterator<Vs>);
 template <typename... Is>
@@ -125,48 +127,6 @@ struct concat_view_element_type {
 template <view V1, view... Vs>
     requires all_same<view_element_type_t<V1>, view_element_type_t<Vs>...>
 using concat_view_element_type_t = typename concat_view_element_type<V1, Vs...>::type;
-
-template <typename V1, typename... Vs>
-    requires views<V1, Vs...>
-struct concat_view_index_type {
-    using type = no_index_type_t;
-};
-template <typename V1, typename... Vs>
-    requires random_access_views<V1, Vs...>
-struct concat_view_index_type<V1, Vs...> {
-    using type = std::common_type_t<view_index_type_t<V1>, view_index_type_t<Vs>...>;
-};
-template <view... Vs>
-using concat_view_index_type_t = typename concat_view_index_type<Vs...>::type;
-
-template <typename... Vs>
-struct is_concat_random_access_view : std::false_type {};
-template <>
-struct is_concat_random_access_view<> : std::true_type {};
-template <random_access_view V, view... Vs>
-struct is_concat_random_access_view<V, Vs...> : is_concat_random_access_view<Vs...> {};
-template <infinite_random_access_view V, view... Vs>
-    requires(!random_access_view<V>)
-struct is_concat_random_access_view<V, Vs...> : std::true_type {};
-template <typename... Vs>
-constexpr bool is_concat_random_access_view_v = is_concat_random_access_view<Vs...>::value;
-
-template <typename... Vs>
-concept concat_random_access_view = is_concat_random_access_view_v<Vs...>;
-
-template <typename V1, typename... Vs, typename Index>
-constexpr decltype(auto) concat_access_by_index(V1&& v1, Vs&&... vs, const Index& index) {
-    if constexpr (sizeof...(Vs) == 0 || infinite_random_access_view<V1>) {
-        return std::forward<V1>(v1)[index];
-    } else {
-        static_assert(random_access_view<V1>);
-        if (index < static_cast<Index>(v1.size())) {
-            return std::forward<V1>(v1)[index];
-        } else {
-            return concat_access_by_index(std::forward<Vs>(vs)..., index - v1.size());
-        }
-    }
-}
 
 template <iterator I1, iterator... Is>
     requires all_same<iterator_element_type_t<I1>, iterator_element_type_t<Is>...>
@@ -1031,20 +991,6 @@ constexpr bool is_concat_backward_reversible_iterator_v =
                                   std::make_index_sequence<std::tuple_size_v<
                                       std::remove_cvref_t<ViewTuple>>>>::is_reversible_iterator;
 
-template <typename Index, random_access_view V>
-constexpr decltype(auto) concat_access_by_index(Index index, V&& v) {
-    return std::forward<V>(v)[index];
-}
-
-template <typename Index, random_access_view V1, random_access_view V2, random_access_view... Vs>
-    requires sized_view<V1>
-constexpr decltype(auto) concat_access_by_index(Index index, V1&& v1, V2&& v2, Vs&&... vs) {
-    return index < v1.size()
-               ? std::forward<V1>(v1)[index]
-               : concat_access_by_index(
-                     index - v1.size(), std::forward<V2>(v2), std::forward<Vs>(vs)...);
-}
-
 }  // namespace impl
 
 /// @brief  concat_view with two or more subviews.
@@ -1057,7 +1003,6 @@ class concat_view<Vs...> {
     [[no_unique_address]] std::tuple<Vs...> vs_;
 
    public:
-    using index_type = impl::concat_view_index_type_t<Vs...>;
     template <view... Vs2>
     constexpr concat_view(wrapping_construct_t,
                           Vs2&&... vs) noexcept((... && std::is_nothrow_constructible_v<Vs2>))
@@ -1133,18 +1078,6 @@ class concat_view<Vs...> {
     {
         return infinite_t{};
     }
-    constexpr decltype(auto) operator[](index_type index)
-        requires impl::concat_random_access_view<Vs...>
-    {
-        return std::apply([&](auto&&... vs) { return impl::concat_access_by_index(index, vs...); },
-                          vs_);
-    }
-    constexpr decltype(auto) operator[](index_type index) const
-        requires impl::concat_random_access_view<Vs...>
-    {
-        return std::apply([&](auto&&... vs) { return impl::concat_access_by_index(index, vs...); },
-                          vs_);
-    }
 };
 
 /// @brief  Trivial concat_view containing only one subview.
@@ -1156,7 +1089,6 @@ class concat_view<V> {
     [[no_unique_address]] V v_;
 
    public:
-    using index_type = view_index_type_t<V>;
     template <view V2>
     constexpr concat_view(wrapping_construct_t,
                           V2&& v) noexcept(std::is_nothrow_constructible_v<V, V2>)
@@ -1174,16 +1106,6 @@ class concat_view<V> {
         requires sized_view<V> || infinite_view<V>
     {
         return v_.size();
-    }
-    constexpr decltype(auto) operator[](view_index_type_t<V> index)
-        requires random_access_view<V>
-    {
-        return v_[index];
-    }
-    constexpr decltype(auto) operator[](view_index_type_t<V> index) const
-        requires random_access_view<V>
-    {
-        return v_[index];
     }
 };
 

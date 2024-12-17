@@ -15,7 +15,7 @@
 
 using namespace duality;
 
-TEST_CASE("finite lazy_take view of finite_random_access_view", "[view lazy_take]") {
+TEST_CASE("finite lazy_take view of random_access_bidirectional_view", "[view lazy_take]") {
     std::vector<int> vec{1, 2, 3, 4, 5};
     auto v = viewify(vec);
     static_assert(std::same_as<view_element_type_t<decltype(v)>, int&>);

@@ -195,6 +195,15 @@ inline void view_assert_backward(
 }
 
 template <typename V>
+inline void view_assert_backward_infinite(
+    V&& v,
+    const std::vector<std::remove_cvref_t<duality::view_element_type_t<V>>>& expected) {
+    // TODO
+    (void)v;
+    (void)expected;
+}
+
+template <typename V>
 inline void view_assert_bidirectional(
     V&& v,
     const std::vector<std::remove_cvref_t<duality::view_element_type_t<V>>>& expected) {
@@ -325,19 +334,24 @@ inline void view_assert_infinite_multipass_forward(
     }
 }
 
+template <typename V>
+inline void view_assert_infinite_multipass_backward(
+    V&& v,
+    const std::vector<std::remove_cvref_t<duality::view_element_type_t<V>>>& expected) {
+    view_assert_backward_infinite(v, expected);
+
+    // invertibility check (backward)
+    // TODO
+}
+
 /// Checks if `v` as an infinite_random_access_view starts with the elements in `expected`.  The
 /// view of course has more elements than `expected`, so we only check that the first
 /// `expected.size()` elements match expect more elements to be consumable.
 template <typename V>
-inline void view_assert_infinite_random_access(
+inline void view_assert_infinite_random_access_forward(
     V&& v,
     const std::vector<std::remove_cvref_t<duality::view_element_type_t<V>>>& expected) {
     view_assert_infinite_multipass_forward(v, expected);
-
-    // indexing check
-    for (size_t i = 0; i != expected.size(); ++i) {
-        CHECK(v[i] == expected[i]);
-    }
 
     // forward skip(n, it)
     {
@@ -361,18 +375,46 @@ inline void view_assert_infinite_random_access(
         CHECK(fit.skip(rit));
     }
 }
+template <typename V>
+inline void view_assert_infinite_random_access_backward(
+    V&& v,
+    const std::vector<std::remove_cvref_t<duality::view_element_type_t<V>>>& expected) {
+    view_assert_infinite_multipass_backward(v, expected);
+
+    // backward skip(n, it)
+    {
+        auto rit = v.backward_iter();
+        const auto fit = v.forward_iter();
+        const size_t half = expected.size() / 2;
+        CHECK(rit.skip(0, fit) == 0);
+        CHECK(rit.skip(half, fit) == half);
+        CHECK(rit.skip(expected.size() - half, fit) == expected.size() - half);
+        CHECK(rit.skip(fit));
+    }
+
+    // backward skip(n)
+    {
+        auto rit = v.backward_iter();
+        const auto fit = v.forward_iter();
+        const size_t half = expected.size() / 2;
+        rit.skip(0);
+        rit.skip(half);
+        rit.skip(expected.size() - half);
+        CHECK(rit.skip(fit));
+    }
+}
 
 template <typename V>
-inline void view_assert_finite_random_access(
+inline void view_assert_random_access_bidirectional(
     V&& v,
     const std::vector<std::remove_cvref_t<duality::view_element_type_t<V>>>& expected) {
     view_assert_multipass_bidirectional(v, expected);
     view_assert_sized(v, expected);
 
-    // indexing check
-    for (size_t i = 0; i != expected.size(); ++i) {
-        CHECK(v[i] == expected[i]);
-    }
+    // // indexing check
+    // for (size_t i = 0; i != expected.size(); ++i) {
+    //     CHECK(v[i] == expected[i]);
+    // }
 
     // forward skip(n, it)
     {
