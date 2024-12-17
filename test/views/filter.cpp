@@ -12,7 +12,7 @@
 
 using namespace duality;
 
-TEST_CASE("filter view of finite_random_access_view", "[view filter]") {
+TEST_CASE("filter view of random_access_bidirectional_view", "[view filter]") {
     std::vector<int> vec{1, 2, 3, 4, 5};
     auto v = viewify(vec);
     static_assert(std::same_as<view_element_type_t<decltype(v)>, int&>);

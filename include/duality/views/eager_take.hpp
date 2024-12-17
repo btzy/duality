@@ -35,7 +35,6 @@ class eager_take_view {
     Amount amount_;
 
    public:
-    using index_type = view_index_type_t<V>;
     template <view V2>
     constexpr eager_take_view(wrapping_construct_t,
                               V2&& v,
@@ -128,16 +127,6 @@ class eager_take_view {
     {
         impl::builtin_assume(amount_ >= 0);
         return amount_;
-    }
-    constexpr decltype(auto) operator[](index_type index)
-        requires random_access_view<V>
-    {
-        return v_[index];
-    }
-    constexpr decltype(auto) operator[](index_type index) const
-        requires random_access_view<V>
-    {
-        return v_[index];
     }
 };
 

@@ -18,22 +18,6 @@
 
 namespace duality {
 
-template <typename V>
-concept const_iterable_view = std::move_constructible<std::remove_cvref_t<V>> &&
-                              (
-                                  requires(const V& v) {
-                                      { v.forward_iter() } -> iterator;
-                                      {
-                                          v.backward_iter()
-                                      } -> sentinel_for<decltype(v.forward_iter())>;
-                                  } ||
-                                  requires(const V& v) {
-                                      {
-                                          v.forward_iter()
-                                      } -> sentinel_for<decltype(v.backward_iter())>;
-                                      { v.backward_iter() } -> iterator;
-                                  });
-
 /// A forward_view is a view whose elements can be streamed in sequence.
 template <typename V>
 concept forward_view = std::move_constructible<std::remove_cvref_t<V>> && requires(V&& v) {
@@ -56,33 +40,28 @@ template <typename V>
 concept view = forward_view<V> || backward_view<V>;
 
 template <typename V>
-concept multipass_forward_view = forward_view<V> && requires(const V& v, V&& v_mut) {
+concept multipass_forward_view = forward_view<V> && requires(V&& v) {
     { v.forward_iter() } -> multipass_iterator;
-    { v_mut.forward_iter() } -> multipass_iterator;
 };
 
 template <typename V>
-concept multipass_backward_view = backward_view<V> && requires(const V& v, V&& v_mut) {
+concept multipass_backward_view = backward_view<V> && requires(V&& v) {
     { v.backward_iter() } -> multipass_iterator;
-    { v_mut.backward_iter() } -> multipass_iterator;
 };
 
 /// A bidirectional_view is a view whose elements can be streamed in sequence from either end,
 /// and meet in the middle.
 template <typename V>
-concept bidirectional_view =
-    forward_view<V> && backward_view<V> && requires(const V& v, V&& v_mut) {
-        requires(std::same_as<iterator_element_type_t<decltype(v.forward_iter())>,
-                              iterator_element_type_t<decltype(v.backward_iter())>>);
-        requires(std::same_as<iterator_element_type_t<decltype(v_mut.forward_iter())>,
-                              iterator_element_type_t<decltype(v_mut.backward_iter())>>);
-    };
+concept bidirectional_view = forward_view<V> && backward_view<V> && requires(V&& v) {
+    requires(std::same_as<iterator_element_type_t<decltype(v.forward_iter())>,
+                          iterator_element_type_t<decltype(v.backward_iter())>>);
+};
 
 /// An multipass_bidirectional_view is a view whose iterators can be converted between the forward
 /// and backward flavours.
 template <typename V>
 concept multipass_bidirectional_view = multipass_forward_view<V> && multipass_backward_view<V> &&
-                                       bidirectional_view<V> && requires(const V& v, V&& v_mut) {
+                                       bidirectional_view<V> && requires(V&& v) {
                                            { v.forward_iter() } -> reversible_iterator;
                                            { v.backward_iter() } -> reversible_iterator;
                                            {
@@ -91,14 +70,6 @@ concept multipass_bidirectional_view = multipass_forward_view<V> && multipass_ba
                                            {
                                                v.backward_iter().invert()
                                            } -> std::same_as<decltype(v.forward_iter())>;
-                                           { v_mut.forward_iter() } -> reversible_iterator;
-                                           { v_mut.backward_iter() } -> reversible_iterator;
-                                           {
-                                               v_mut.forward_iter().invert()
-                                           } -> std::same_as<decltype(v_mut.backward_iter())>;
-                                           {
-                                               v_mut.backward_iter().invert()
-                                           } -> std::same_as<decltype(v_mut.forward_iter())>;
                                        };
 
 /// A emptyness_view is a view that has constant time emptyness check.
@@ -139,72 +110,51 @@ using view_element_type_t = typename view_element_type<T>::type;
 
 struct no_index_type_t {};
 
-namespace impl {
-template <view T>
+template <typename V>
+concept random_access_forward_view =
+    multipass_forward_view<V> &&
+    ((sized_view<V> &&
+      std::same_as<decltype(std::declval<V>().size()),
+                   typename decltype(std::declval<V>().forward_iter())::index_type>) ||
+     infinite_view<V>)&&requires(V&& v) {
+        { v.forward_iter() } -> random_access_iterator_with_sentinel<decltype(v.backward_iter())>;
+    };
+
+template <typename V>
+concept random_access_backward_view =
+    multipass_backward_view<V> &&
+    ((sized_view<V> &&
+      std::same_as<decltype(std::declval<V>().size()),
+                   typename decltype(std::declval<V>().backward_iter())::index_type>) ||
+     infinite_view<V>)&&requires(V&& v) {
+        { v.backward_iter() } -> random_access_iterator_with_sentinel<decltype(v.forward_iter())>;
+    };
+
+/// A random_access_bidirectional_view is a view that has constant time access of any element by
+/// index.  It may be finite or infinite
+template <typename V>
+concept random_access_bidirectional_view =
+    multipass_bidirectional_view<V> && random_access_forward_view<V> &&
+    random_access_backward_view<V> &&
+    std::same_as<typename decltype(std::declval<V>().forward_iter())::index_type,
+                 typename decltype(std::declval<V>().backward_iter())::index_type>;
+
+/// Gets the type to pass to skip(n) and next(n)
+template <view V>
 struct view_index_type {
     using type = no_index_type_t;
 };
-template <typename T>
-concept has_index_type = requires { typename std::remove_cvref_t<T>::index_type; };
-template <view T>
-    requires has_index_type<T>
-struct view_index_type<T> {
-    using type = typename std::remove_cvref_t<T>::index_type;
+template <random_access_forward_view V>
+struct view_index_type<V> {
+    using type = typename decltype(std::declval<V>().forward_iter())::index_type;
 };
-template <view T>
-    requires(!has_index_type<T> && requires { std::declval<T>().size(); })
-struct view_index_type<T> {
-    using type = decltype(std::declval<T>().size());
+template <random_access_backward_view V>
+    requires(!random_access_forward_view<V>)
+struct view_index_type<V> {
+    using type = typename decltype(std::declval<V>().backward_iter())::index_type;
 };
-template <view T>
-using view_index_type_t = typename view_index_type<T>::type;
-}  // namespace impl
-
-/// A random_access_view is a view that has constant time access of any element by index.  It may be
-/// finite or infinite
-template <typename V>
-concept random_access_view =
-    multipass_forward_view<V> &&
-    (sized_view<V> || infinite_view<V>)&&std::integral<impl::view_index_type_t<V>> &&
-    requires(const V& v, V&& v_mut) {
-        {
-            v[std::declval<impl::view_index_type_t<V>>()]
-        } -> std::same_as<view_element_type_t<const V>>;
-        { v.forward_iter() } -> random_access_iterator_with_sentinel<decltype(v.backward_iter())>;
-        requires(std::same_as<impl::view_index_type_t<V>,
-                              iterator_index_type_t<decltype(v.forward_iter())>>);
-        {
-            v_mut[std::declval<impl::view_index_type_t<V>>()]
-        } -> std::same_as<view_element_type_t<V&&>>;
-        {
-            v_mut.forward_iter()
-        } -> random_access_iterator_with_sentinel<decltype(v_mut.backward_iter())>;
-        requires(std::same_as<impl::view_index_type_t<V>,
-                              iterator_index_type_t<decltype(v_mut.forward_iter())>>);
-    };
-
-/// A finite_random_access_view is a view that has constant time access of any element by index, and
-/// is finite.  All random_access_views must also be multipass_bidirectional_view and sized_view.
-template <typename V>
-concept finite_random_access_view =
-    random_access_view<V> && multipass_bidirectional_view<V> && sized_view<V> &&
-    requires(const V& v, V&& v_mut) {
-        { v.backward_iter() } -> random_access_iterator_with_sentinel<decltype(v.forward_iter())>;
-        {
-            v_mut.backward_iter()
-        } -> random_access_iterator_with_sentinel<decltype(v_mut.forward_iter())>;
-    };
-
-template <typename V>
-concept infinite_random_access_view = random_access_view<V> && infinite_view<V>;
-
-/// Gets the type to pass to operator[].
-template <view T>
-struct view_index_type {
-    using type = impl::view_index_type_t<T>;
-};
-template <view T>
-using view_index_type_t = typename view_index_type<T>::type;
+template <view V>
+using view_index_type_t = typename view_index_type<V>::type;
 
 // --- Adaptors ---
 // An adaptor is an object which has a function call operator that takes in a view.  Adaptors
@@ -251,10 +201,8 @@ class dummy_random_access_view {
     dummy_backward_random_access_iterator<T> backward_iter();
     bool empty() const;
     size_t size() const;
-    T operator[](size_t index) const;
-    T operator[](size_t index);
 };
-static_assert(random_access_view<dummy_random_access_view<int>>);
+static_assert(random_access_bidirectional_view<dummy_random_access_view<int>>);
 }  // namespace impl
 
 template <typename A, typename T>

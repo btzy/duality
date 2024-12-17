@@ -22,8 +22,6 @@ class repeat_forward_iterator;
 template <typename T, std::integral Count>
 class repeat_backward_iterator;
 
-class repeat_sentinel {};
-
 template <typename T, std::integral Count>
 class repeat_forward_iterator {
    private:
@@ -50,7 +48,8 @@ class repeat_forward_iterator {
         ++index_;
         return *value_;
     }
-    constexpr optional<element_type> next(const repeat_sentinel&) noexcept {
+    // used in infinite_repeat_view only
+    constexpr optional<element_type> next(const repeat_forward_iterator<T, Count>&) noexcept {
         ++index_;
         return *value_;
     }
@@ -60,7 +59,8 @@ class repeat_forward_iterator {
         ++index_;
         return true;
     }
-    constexpr bool skip(const repeat_sentinel&) noexcept {
+    // used in infinite_repeat_view only
+    constexpr bool skip(const repeat_forward_iterator<T, Count>&) noexcept {
         ++index_;
         return true;
     }
@@ -74,7 +74,7 @@ class repeat_forward_iterator {
         index_ = end_i.index_;
         return diff;
     }
-    constexpr Count skip(Count count, const repeat_sentinel&) noexcept {
+    constexpr Count skip(Count count, const repeat_forward_iterator<T, Count>&) noexcept {
         index_ += count;
         return count;
     }
@@ -89,6 +89,8 @@ class repeat_backward_iterator {
     using element_type = const T&;
     template <typename, std::integral>
     friend class duality::repeat_view;
+    template <typename, std::integral>
+    friend class duality::infinite_repeat_view;
     friend class repeat_forward_iterator<T, Count>;
     const T* value_;
     [[no_unique_address]] Count index_;
@@ -136,7 +138,6 @@ class repeat_view {
     [[no_unique_address]] Count count_;
 
    public:
-    using index_type = Count;
     template <typename T2>
     constexpr repeat_view(wrapping_construct_t,
                           T2&& value,
@@ -152,7 +153,6 @@ class repeat_view {
     }
     constexpr bool empty() const noexcept { return count_ == 0; }
     constexpr Count size() const noexcept { return count_; }
-    constexpr const std::remove_cvref_t<T>& operator[](Count) const noexcept { return value_; }
 };
 
 template <typename T, std::integral Index>
@@ -161,19 +161,20 @@ class infinite_repeat_view {
     [[no_unique_address]] T value_;
 
    public:
-    using index_type = Index;
     template <typename T2>
     constexpr infinite_repeat_view(wrapping_construct_t,
                                    T2&& value) noexcept(std::is_nothrow_constructible_v<T, T2>)
         : value_(std::forward<T2>(value)) {}
     constexpr auto forward_iter() const noexcept {
-        return impl::repeat_forward_iterator<std::remove_cvref_t<T>, index_type>(
+        return impl::repeat_forward_iterator<std::remove_cvref_t<T>, Index>(
             wrapping_construct, value_, 0);
     }
-    constexpr auto backward_iter() const noexcept { return impl::repeat_sentinel{}; }
+    constexpr auto backward_iter() const noexcept {
+        return impl::repeat_forward_iterator<std::remove_cvref_t<T>, Index>(
+            wrapping_construct, value_, 0);
+    }
     constexpr static bool empty() noexcept { return false; }
     constexpr static infinite_t size() noexcept { return infinite_t{}; }
-    constexpr const T& operator[](index_type) const noexcept { return value_; }
 };
 
 template <typename T2, std::integral Count>

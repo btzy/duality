@@ -105,7 +105,6 @@ class as_const_view {
     [[no_unique_address]] V v_;
 
    public:
-    using index_type = view_index_type_t<V>;
     template <view V2>
     constexpr as_const_view(wrapping_construct_t,
                             V2&& v) noexcept(std::is_nothrow_constructible_v<V, V2>)
@@ -155,18 +154,6 @@ class as_const_view {
         requires sized_view<V> || infinite_view<V>
     {
         return v_.size();
-    }
-    constexpr impl::add_const_to_reference_t<view_element_type_t<V>> operator[](
-        view_index_type_t<V> index)
-        requires random_access_view<V>
-    {
-        return v_[index];
-    }
-    constexpr impl::add_const_to_reference_t<view_element_type_t<const V>> operator[](
-        view_index_type_t<V> index) const
-        requires random_access_view<V>
-    {
-        return f_(v_[index]);
     }
 };
 

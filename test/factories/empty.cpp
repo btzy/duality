@@ -10,5 +10,5 @@ using namespace duality;
 TEST_CASE("empty view", "[view empty]") {
     auto v = factories::empty<int>();
     static_assert(std::same_as<view_element_type_t<decltype(v)>, int>);
-    view_assert_finite_random_access(v, {});
+    view_assert_random_access_bidirectional(v, {});
 }

@@ -35,7 +35,7 @@ class basic_istream_sentinel {};
 /// @brief Represents a forward iterator of a basic_istream.  This type is movable, but moving it
 /// leaves an object where the only valid operations are reassignment or destruction.
 /// @tparam Val The type of value produced.
-template <typename Val, impl::basic_istream_cv_concept Stream>
+template <typename Val, basic_istream_cv_concept Stream>
 class basic_istream_forward_iterator {
    private:
     template <typename, basic_istream_cvref_concept>

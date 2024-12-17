@@ -14,7 +14,6 @@ class reverse_view {
     [[no_unique_address]] V v_;
 
    public:
-    using index_type = view_index_type_t<V>;
     template <view V2>
     constexpr reverse_view(wrapping_construct_t,
                            V2&& v) noexcept(std::is_nothrow_constructible_v<V, V2>)
@@ -32,18 +31,6 @@ class reverse_view {
         requires sized_view<V> || infinite_view<V>
     {
         return v_.size();
-    }
-    constexpr decltype(auto) operator[](index_type index)
-        requires finite_random_access_view<V>
-    {
-        auto&& i = v_.size() - index - 1;
-        return v_[i];
-    }
-    constexpr decltype(auto) operator[](index_type index) const
-        requires finite_random_access_view<V>
-    {
-        auto&& i = v_.size() - index - 1;
-        return v_[i];
     }
 };
 

@@ -95,7 +95,6 @@ class filter_view {
     F f_;
 
    public:
-    using index_type = no_index_type_t;
     template <view V2, impl::filter_function<view_element_type_t<V>> F2>
     constexpr filter_view(wrapping_construct_t,
                           V2&& v,

@@ -107,7 +107,6 @@ class single_view {
     using base_type = std::remove_cvref_t<T>;
 
    public:
-    using index_type = size_t;
     template <typename T2>
     constexpr single_view(wrapping_construct_t,
                           T2&& value) noexcept(std::is_nothrow_constructible_v<T, T2>)
@@ -120,7 +119,6 @@ class single_view {
     }
     constexpr static bool empty() noexcept { return false; }
     constexpr static size_t size() noexcept { return 1; }
-    constexpr const base_type& operator[](index_type) const noexcept { return value_; }
 };
 
 template <typename T2>

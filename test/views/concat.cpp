@@ -24,7 +24,7 @@ TEST_CASE("concat view", "[view concat]") {
         auto v1 = viewify(vec1);
         auto v = views::concat(v1);
         static_assert(std::same_as<view_element_type_t<decltype(v)>, int&>);
-        view_assert_finite_random_access(v, {1, 2, 3, 4, 5});
+        view_assert_random_access_bidirectional(v, {1, 2, 3, 4, 5});
     }
 
     SECTION("one forward_list") {
@@ -37,7 +37,7 @@ TEST_CASE("concat view", "[view concat]") {
     SECTION("one infinite") {
         auto v = views::concat(rep);
         static_assert(std::same_as<view_element_type_t<decltype(v)>, const int&>);
-        view_assert_infinite_random_access(v, {88, 88, 88, 88, 88});
+        view_assert_infinite_random_access_forward(v, {88, 88, 88, 88, 88});
     }
 
     SECTION("two vectors") {
@@ -45,7 +45,7 @@ TEST_CASE("concat view", "[view concat]") {
         auto v2 = viewify(vec2);
         auto v = views::concat(v1, v2);
         static_assert(std::same_as<view_element_type_t<decltype(v)>, int&>);
-        view_assert_finite_random_access(v, {1, 2, 3, 4, 5, 101, 102, 103, 104, 105});
+        view_assert_random_access_bidirectional(v, {1, 2, 3, 4, 5, 101, 102, 103, 104, 105});
     }
 
     SECTION("two vectors and one forward_list") {
@@ -80,7 +80,7 @@ TEST_CASE("concat view", "[view concat]") {
         auto v3 = viewify(vec2);
         auto v = views::concat(v1 | views::as_const, rep, v3 | views::as_const);
         static_assert(std::same_as<view_element_type_t<decltype(v)>, const int&>);
-        view_assert_infinite_random_access(v, {1, 2, 3, 4, 5, 88, 88, 88});
+        view_assert_infinite_random_access_forward(v, {1, 2, 3, 4, 5, 88, 88, 88});
     }
 
     SECTION("vector, infinite, forward_list") {
@@ -88,6 +88,6 @@ TEST_CASE("concat view", "[view concat]") {
         auto v3 = viewify(flist);
         auto v = views::concat(v1 | views::as_const, rep, v3 | views::as_const);
         static_assert(std::same_as<view_element_type_t<decltype(v)>, const int&>);
-        view_assert_infinite_random_access(v, {1, 2, 3, 4, 5, 88, 88, 88});
+        view_assert_infinite_random_access_forward(v, {1, 2, 3, 4, 5, 88, 88, 88});
     }
 }

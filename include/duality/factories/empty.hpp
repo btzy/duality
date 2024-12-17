@@ -67,24 +67,11 @@ class empty_iterator {
 template <typename T>
 class empty_view {
    public:
-    using index_type = size_t;
     constexpr empty_view() noexcept = default;
     constexpr impl::empty_iterator<T> forward_iter() const noexcept { return {}; }
     constexpr impl::empty_iterator<T> backward_iter() const noexcept { return {}; }
     constexpr static bool empty() noexcept { return true; }
     constexpr static size_t size() noexcept { return 0; }
-    UNREACHABLE_RETURN_BEGIN
-#if !defined(__GNUC__) || defined(__clang__)
-    // GCC doesn't like constexpr functions to not have a return statement, but we can't utter a
-    // return statement because that will require T to be default constructable.
-    constexpr
-#endif
-        T
-        operator[](index_type) const noexcept {
-        // Since there are no elements, this access is always out of bounds, and so it's always UB.
-        impl::builtin_unreachable();
-    }
-    UNREACHABLE_RETURN_END
 };
 
 namespace factories {
