@@ -94,7 +94,6 @@ class transform_view {
     [[no_unique_address]] F f_;
 
    public:
-    using index_type = view_index_type_t<V>;
     template <view V2, impl::transform_function<view_element_type_t<V>> F2>
     constexpr transform_view(wrapping_construct_t,
                              V2&& v,
@@ -129,16 +128,6 @@ class transform_view {
         requires sized_view<V> || infinite_view<V>
     {
         return v_.size();
-    }
-    constexpr decltype(auto) operator[](view_index_type_t<V> index)
-        requires random_access_view<V>
-    {
-        return f_(v_[index]);
-    }
-    constexpr decltype(auto) operator[](view_index_type_t<V> index) const
-        requires random_access_view<V>
-    {
-        return f_(v_[index]);
     }
 };
 

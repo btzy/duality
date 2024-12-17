@@ -150,7 +150,6 @@ class contiguous_viewifier_nonowning {
     }
     constexpr bool empty() const noexcept { return begin_ == end_; }
     constexpr size_t size() const noexcept { return end_ - begin_; }
-    constexpr T& operator[](size_t i) const noexcept { return begin_[i]; }
 };
 
 template <impl::contiguous_container T>
@@ -186,10 +185,6 @@ class contiguous_viewifier_owning {
     }
     constexpr bool empty() const noexcept { return std::empty(container_); }
     constexpr size_t size() const noexcept { return std::size(container_); }
-    constexpr typename T::value_type& operator[](size_t i) noexcept { return container_[i]; }
-    constexpr const typename T::value_type& operator[](size_t i) const noexcept {
-        return container_[i];
-    }
 };
 
 template <impl::contiguous_container T>
