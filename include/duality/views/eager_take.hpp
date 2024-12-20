@@ -26,16 +26,13 @@
 namespace duality {
 
 template <multipass_forward_view V, std::integral Amount>
-class eager_take_view;
-
-template <multipass_forward_view V, std::integral Amount>
 class eager_take_view {
    private:
     V v_;
     Amount amount_;
 
    public:
-    template <view V2>
+    template <multipass_forward_view V2>
     constexpr eager_take_view(wrapping_construct_t,
                               V2&& v,
                               Amount amount) noexcept(std::is_nothrow_constructible_v<V, V2>)
@@ -45,30 +42,18 @@ class eager_take_view {
     constexpr decltype(auto) forward_iter() { return v_.forward_iter(); }
     constexpr decltype(auto) forward_iter() const { return v_.forward_iter(); }
     constexpr decltype(auto) backward_iter() {
-        if constexpr (std::same_as<decltype(v_.forward_iter().invert()),
-                                   decltype(v_.backward_iter())>) {
-            auto fit = v_.forward_iter();
-            auto bit = v_.backward_iter();
-            for (Amount amt = amount_; amt > 0; --amt) {
-                if (!fit.skip(bit)) {
-                    return bit;
-                }
+        auto fit = v_.forward_iter();
+        auto bit = v_.backward_iter();
+        for (Amount amt = amount_; amt > 0; --amt) {
+            auto prev_fit = fit;
+            if (!fit.skip(bit)) {
+                // After a failed skip(bit) operation, fit is in an unspecified (but valid) state,
+                // so we cannot use it.  Instead, we invert a previously cached iterator from before
+                // the skip operation.
+                return prev_fit.invert();
             }
-            return fit.invert();
-        } else {
-            auto fit = v_.forward_iter();
-            auto bit = v_.backward_iter();
-            for (Amount amt = amount_; amt > 0; --amt) {
-                auto prev_fit = fit;
-                if (!fit.skip(bit)) {
-                    // After a failed skip(bit) operation, fit is in an unspecified (but valid)
-                    // state, so we cannot use it.  Instead, we invert a previously cached iterator
-                    // from before the skip operation.
-                    return prev_fit.invert();
-                }
-            }
-            return fit.invert();
         }
+        return fit.invert();
     }
     constexpr decltype(auto) backward_iter()
         requires random_access_iterator<decltype(v_.forward_iter())>
@@ -78,30 +63,18 @@ class eager_take_view {
         return fit.invert();
     }
     constexpr decltype(auto) backward_iter() const {
-        if constexpr (std::same_as<decltype(v_.forward_iter().invert()),
-                                   decltype(v_.backward_iter())>) {
-            auto fit = v_.forward_iter();
-            auto bit = v_.backward_iter();
-            for (Amount amt = amount_; amt > 0; --amt) {
-                if (!fit.skip(bit)) {
-                    return bit;
-                }
+        auto fit = v_.forward_iter();
+        auto bit = v_.backward_iter();
+        for (Amount amt = amount_; amt > 0; --amt) {
+            auto prev_fit = fit;
+            if (!fit.skip(bit)) {
+                // After a failed skip(bit) operation, fit is in an unspecified (but valid) state,
+                // so we cannot use it.  Instead, we invert a previously cached iterator from before
+                // the skip operation.
+                return prev_fit.invert();
             }
-            return fit.invert();
-        } else {
-            auto fit = v_.forward_iter();
-            auto bit = v_.backward_iter();
-            for (Amount amt = amount_; amt > 0; --amt) {
-                auto prev_fit = fit;
-                if (!fit.skip(bit)) {
-                    // After a failed skip(bit) operation, fit is in an unspecified (but valid)
-                    // state, so we cannot use it.  Instead, we invert a previously cached iterator
-                    // from before the skip operation.
-                    return prev_fit.invert();
-                }
-            }
-            return fit.invert();
         }
+        return fit.invert();
     }
     constexpr decltype(auto) backward_iter() const
         requires random_access_iterator<decltype(v_.forward_iter())>
