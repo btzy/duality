@@ -103,13 +103,13 @@ class eager_take_view {
     }
 };
 
-template <forward_view V2, std::integral Amount>
+template <multipass_forward_view V2, std::integral Amount>
 eager_take_view(wrapping_construct_t, V2&& v, Amount amount) -> eager_take_view<V2, Amount>;
 
 namespace impl {
 template <std::integral Amount = std::size_t>
 struct eager_take_adaptor {
-    template <forward_view V>
+    template <multipass_forward_view V>
     constexpr auto operator()(V&& v) const {
         if constexpr (std::integral<view_index_type_t<V>>) {
             return eager_take_view(
@@ -121,12 +121,12 @@ struct eager_take_adaptor {
     [[no_unique_address]] Amount amount;
 };
 struct eager_take {
-    template <forward_view V>
+    template <multipass_forward_view V>
         requires std::same_as<view_index_type_t<V>, no_index_type_t>
     constexpr DUALITY_STATIC_CALL auto operator()(V&& v, size_t amount) DUALITY_CONST_CALL {
         return eager_take_view(wrapping_construct, std::forward<V>(v), amount);
     }
-    template <forward_view V>
+    template <multipass_forward_view V>
         requires std::integral<view_index_type_t<V>>
     constexpr DUALITY_STATIC_CALL auto operator()(V&& v,
                                                   view_index_type_t<V> amount) DUALITY_CONST_CALL {
