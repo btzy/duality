@@ -58,3 +58,12 @@ TEST_CASE("finite transform view of multipass_forward_view", "[view transform]")
                                       views::transform([](int x) { return x * 3; }),
                                   {6, 12, 18, 24, 30});
 }
+
+TEST_CASE("transform view with function object by reference", "[view transform]") {
+    std::vector<int> vec{1, 2, 3, 4, 5};
+    auto v = viewify(vec);
+    auto transform_fn = [](int x) { return x * 2; };
+    static_assert(std::same_as<view_element_type_t<decltype(v)>, int&>);
+    view_assert_random_access_bidirectional(views::transform(v, transform_fn), {2, 4, 6, 8, 10});
+    view_assert_random_access_bidirectional(v | views::transform(transform_fn), {2, 4, 6, 8, 10});
+}

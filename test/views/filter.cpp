@@ -42,3 +42,12 @@ TEST_CASE("filter view of multipass_forward_view", "[view filter]") {
                                       views::filter([](int x) { return x % 3 == 0; }),
                                   {6});
 }
+
+TEST_CASE("filter view with function object by reference", "[view filter]") {
+    std::vector<int> vec{1, 2, 3, 4, 5};
+    auto v = viewify(vec);
+    auto filter_fn = [](int x) { return x % 2 == 0; };
+    static_assert(std::same_as<view_element_type_t<decltype(v)>, int&>);
+    view_assert_multipass_bidirectional(views::filter(v, filter_fn), {2, 4});
+    view_assert_multipass_bidirectional(v | views::filter(filter_fn), {2, 4});
+}
