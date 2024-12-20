@@ -96,9 +96,8 @@ class filter_view {
 
    public:
     template <view V2, impl::filter_function<view_element_type_t<V>> F2>
-    constexpr filter_view(wrapping_construct_t,
-                          V2&& v,
-                          F2&& f) noexcept(std::is_nothrow_constructible_v<V, V2>)
+    constexpr filter_view(wrapping_construct_t, V2&& v, F2&& f) noexcept(
+        std::is_nothrow_constructible_v<V, V2> && std::is_nothrow_constructible_v<F, F2>)
         : v_(std::forward<V2>(v)), f_(std::forward<F2>(f)) {}
     constexpr decltype(auto) forward_iter() {
         return impl::filter_iterator<decltype(v_.forward_iter()),
