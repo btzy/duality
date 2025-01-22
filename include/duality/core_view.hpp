@@ -50,7 +50,8 @@ concept multipass_backward_view = backward_view<V> && requires(V&& v) {
 };
 
 /// A bidirectional_view is a view whose elements can be streamed in sequence from either end,
-/// and meet in the middle.
+/// and meet in the middle.  The forward iterator is not allowed to run past the backward iterator
+/// unless it is also multipass.
 template <typename V>
 concept bidirectional_view = forward_view<V> && backward_view<V> && requires(V&& v) {
     requires(std::same_as<iterator_element_type_t<decltype(v.forward_iter())>,
