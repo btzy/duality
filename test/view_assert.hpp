@@ -60,10 +60,10 @@ inline void view_assert_forward_singlepass(
     }
 }
 
-template <typename V>
-inline void view_assert_forward(
-    V&& v,
-    const std::vector<std::remove_cvref_t<duality::view_element_type_t<V>>>& expected) {
+template <typename V,
+          typename E = std::vector<std::remove_cvref_t<duality::view_element_type_t<V>>>,
+          typename Equals = std::equal_to<>>
+inline void view_assert_forward(V&& v, const E& expected, Equals&& equals = {}) {
     // forward check
     {
         auto it = expected.begin();
@@ -71,7 +71,7 @@ inline void view_assert_forward(
         const auto rit = v.backward_iter();
         while (auto opt = fit.next(rit)) {
             REQUIRE(it != expected.end());
-            CHECK(*opt == *it++);
+            CHECK(equals(*opt, *it++));
         }
         CHECK(it == expected.end());
     }
@@ -90,7 +90,7 @@ inline void view_assert_forward(
     {
         auto fit = v.forward_iter();
         for (auto&& x : expected) {
-            REQUIRE(fit.next() == x);
+            REQUIRE(equals(fit.next(), x));
         }
         CHECK_FALSE(fit.next(v.backward_iter()));
     }
@@ -105,10 +105,10 @@ inline void view_assert_forward(
     }
 }
 
-template <typename V>
-inline void view_assert_forward_infinite(
-    V&& v,
-    const std::vector<std::remove_cvref_t<duality::view_element_type_t<V>>>& expected) {
+template <typename V,
+          typename E = std::vector<std::remove_cvref_t<duality::view_element_type_t<V>>>,
+          typename Equals = std::equal_to<>>
+inline void view_assert_forward_infinite(V&& v, const E& expected, Equals&& equals = {}) {
     // forward check
     {
         auto fit = v.forward_iter();
@@ -116,7 +116,7 @@ inline void view_assert_forward_infinite(
         for (auto&& x : expected) {
             auto opt = fit.next(rit);
             REQUIRE(opt);
-            CHECK(*opt == x);
+            CHECK(equals(*opt, x));
         }
         CHECK(fit.next(rit));
     }
@@ -134,7 +134,7 @@ inline void view_assert_forward_infinite(
     {
         auto fit = v.forward_iter();
         for (auto&& x : expected) {
-            REQUIRE(fit.next() == x);
+            REQUIRE(equals(fit.next(), x));
         }
         CHECK(fit.next(v.backward_iter()));
     }
@@ -149,10 +149,10 @@ inline void view_assert_forward_infinite(
     }
 }
 
-template <typename V>
-inline void view_assert_backward(
-    V&& v,
-    const std::vector<std::remove_cvref_t<duality::view_element_type_t<V>>>& expected) {
+template <typename V,
+          typename E = std::vector<std::remove_cvref_t<duality::view_element_type_t<V>>>,
+          typename Equals = std::equal_to<>>
+inline void view_assert_backward(V&& v, const E& expected, Equals&& equals = {}) {
     // backward check
     {
         auto it = expected.rbegin();
@@ -160,7 +160,7 @@ inline void view_assert_backward(
         auto rit = v.backward_iter();
         while (auto opt = rit.next(fit)) {
             REQUIRE(it != expected.rend());
-            CHECK(*opt == *it++);
+            CHECK(equals(*opt, *it++));
         }
         CHECK(it == expected.rend());
     }
@@ -179,7 +179,7 @@ inline void view_assert_backward(
     {
         auto fit = v.backward_iter();
         for (auto it = expected.rbegin(); it != expected.rend(); ++it) {
-            REQUIRE(fit.next() == *it);
+            REQUIRE(equals(fit.next(), *it));
         }
         CHECK_FALSE(fit.next(v.forward_iter()));
     }
@@ -194,21 +194,22 @@ inline void view_assert_backward(
     }
 }
 
-template <typename V>
-inline void view_assert_backward_infinite(
-    V&& v,
-    const std::vector<std::remove_cvref_t<duality::view_element_type_t<V>>>& expected) {
+template <typename V,
+          typename E = std::vector<std::remove_cvref_t<duality::view_element_type_t<V>>>,
+          typename Equals = std::equal_to<>>
+inline void view_assert_backward_infinite(V&& v, const E& expected, Equals&& equals = {}) {
     // TODO
     (void)v;
     (void)expected;
+    (void)equals;
 }
 
-template <typename V>
-inline void view_assert_bidirectional(
-    V&& v,
-    const std::vector<std::remove_cvref_t<duality::view_element_type_t<V>>>& expected) {
-    view_assert_forward(v, expected);
-    view_assert_backward(v, expected);
+template <typename V,
+          typename E = std::vector<std::remove_cvref_t<duality::view_element_type_t<V>>>,
+          typename Equals = std::equal_to<>>
+inline void view_assert_bidirectional(V&& v, const E& expected, Equals&& equals = {}) {
+    view_assert_forward(v, expected, equals);
+    view_assert_backward(v, expected, equals);
 
     // bidirectional check
     auto it_begin = expected.begin();
@@ -220,14 +221,14 @@ inline void view_assert_bidirectional(
         if (!from_back) {
             if (auto opt = fit.next(std::as_const(rit))) {
                 REQUIRE(it_begin != it_end);
-                CHECK(*opt == *it_begin++);
+                CHECK(equals(*opt, *it_begin++));
             } else {
                 break;
             }
         } else {
             if (auto opt = rit.next(std::as_const(fit))) {
                 REQUIRE(it_begin != it_end);
-                CHECK(*opt == *--it_end);
+                CHECK(equals(*opt, *--it_end));
             } else {
                 break;
             }
@@ -236,12 +237,19 @@ inline void view_assert_bidirectional(
     CHECK(it_begin == it_end);
 }
 
-template <typename DualityIter, typename DualityEndIter, typename StdIter>
-inline void check_inverted(DualityIter fit, const DualityEndIter rit, StdIter curr, StdIter from) {
+template <typename DualityIter,
+          typename DualityEndIter,
+          typename StdIter,
+          typename Equals = std::equal_to<>>
+inline void check_inverted(DualityIter fit,
+                           const DualityEndIter rit,
+                           StdIter curr,
+                           StdIter from,
+                           Equals&& equals = {}) {
     for (size_t i = 0; i != 2; ++i) {
         if (auto opt = fit.next(rit)) {
             REQUIRE(curr != from);
-            CHECK(*--curr == *opt);
+            CHECK(equals(*--curr, *opt));
         } else {
             CHECK(curr == from);
             break;
@@ -249,22 +257,22 @@ inline void check_inverted(DualityIter fit, const DualityEndIter rit, StdIter cu
     }
 }
 
-template <typename V>
-inline void view_assert_multipass_bidirectional(
-    V&& v,
-    const std::vector<std::remove_cvref_t<duality::view_element_type_t<V>>>& expected) {
-    view_assert_bidirectional(v, expected);
+template <typename V,
+          typename E = std::vector<std::remove_cvref_t<duality::view_element_type_t<V>>>,
+          typename Equals = std::equal_to<>>
+inline void view_assert_multipass_bidirectional(V&& v, const E& expected, Equals&& equals = {}) {
+    view_assert_bidirectional(v, expected, equals);
 
     // invertibility check (forward)
     {
         auto it = expected.begin();
         auto fit = v.forward_iter();
         const auto rit = v.backward_iter();
-        check_inverted(fit.invert(), fit, it, expected.begin());
+        check_inverted(fit.invert(), fit, it, expected.begin(), equals);
         while (auto opt = fit.next(rit)) {
             REQUIRE(it != expected.end());
-            CHECK(*opt == *it++);
-            check_inverted(fit.invert(), v.forward_iter(), it, expected.begin());
+            CHECK(equals(*opt, *it++));
+            check_inverted(fit.invert(), v.forward_iter(), it, expected.begin(), equals);
         }
         CHECK(it == expected.end());
     }
@@ -274,37 +282,35 @@ inline void view_assert_multipass_bidirectional(
         auto it = expected.rbegin();
         const auto fit = v.forward_iter();
         auto rit = v.backward_iter();
-        check_inverted(rit.invert(), rit, it, expected.rbegin());
+        check_inverted(rit.invert(), rit, it, expected.rbegin(), equals);
         while (auto opt = rit.next(fit)) {
             REQUIRE(it != expected.rend());
-            CHECK(*opt == *it++);
-            check_inverted(rit.invert(), v.backward_iter(), it, expected.rbegin());
+            CHECK(equals(*opt, *it++));
+            check_inverted(rit.invert(), v.backward_iter(), it, expected.rbegin(), equals);
         }
         CHECK(it == expected.rend());
     }
 }
 
-template <typename V>
-inline void view_assert_multipass_forward(
-    V&& v,
-    const std::vector<std::remove_cvref_t<duality::view_element_type_t<V>>>& expected) {
-    view_assert_forward(v, expected);
+template <typename V,
+          typename E = std::vector<std::remove_cvref_t<duality::view_element_type_t<V>>>,
+          typename Equals = std::equal_to<>>
+inline void view_assert_multipass_forward(V&& v, const E& expected, Equals&& equals = {}) {
+    view_assert_forward(v, expected, equals);
 
     // TODO check multipass property.
 }
 
-template <typename V>
-inline void view_assert_emptyness(
-    V&& v,
-    const std::vector<std::remove_cvref_t<duality::view_element_type_t<V>>>& expected) {
+template <typename V,
+          typename E = std::vector<std::remove_cvref_t<duality::view_element_type_t<V>>>>
+inline void view_assert_emptyness(V&& v, const E& expected) {
     // emptyness check
     CHECK(v.empty() == expected.empty());
 }
 
-template <typename V>
-inline void view_assert_sized(
-    V&& v,
-    const std::vector<std::remove_cvref_t<duality::view_element_type_t<V>>>& expected) {
+template <typename V,
+          typename E = std::vector<std::remove_cvref_t<duality::view_element_type_t<V>>>>
+inline void view_assert_sized(V&& v, const E& expected) {
     view_assert_emptyness(v, expected);
 
     // size check
@@ -314,31 +320,33 @@ inline void view_assert_sized(
 /// Checks if `v` as an infinite_random_access_view starts with the elements in `expected`.  The
 /// view of course has more elements than `expected`, so we only check that the first
 /// `expected.size()` elements match expect more elements to be consumable.
-template <typename V>
-inline void view_assert_infinite_multipass_forward(
-    V&& v,
-    const std::vector<std::remove_cvref_t<duality::view_element_type_t<V>>>& expected) {
-    view_assert_forward_infinite(v, expected);
+template <typename V,
+          typename E = std::vector<std::remove_cvref_t<duality::view_element_type_t<V>>>,
+          typename Equals = std::equal_to<>>
+inline void view_assert_infinite_multipass_forward(V&& v, const E& expected, Equals&& equals = {}) {
+    view_assert_forward_infinite(v, expected, equals);
 
     // invertibility check (forward)
     {
         auto fit = v.forward_iter();
         const auto rit = v.backward_iter();
         for (auto it = expected.begin(); it != expected.end(); ++it) {
-            check_inverted(fit.invert(), v.forward_iter(), it, expected.begin());
+            check_inverted(fit.invert(), v.forward_iter(), it, expected.begin(), equals);
             auto opt = fit.next(rit);
             REQUIRE(opt);
-            CHECK(*opt == *it);
+            CHECK(equals(*opt, *it));
         }
-        check_inverted(fit.invert(), v.forward_iter(), expected.end(), expected.begin());
+        check_inverted(fit.invert(), v.forward_iter(), expected.end(), expected.begin(), equals);
     }
 }
 
-template <typename V>
-inline void view_assert_infinite_multipass_backward(
-    V&& v,
-    const std::vector<std::remove_cvref_t<duality::view_element_type_t<V>>>& expected) {
-    view_assert_backward_infinite(v, expected);
+template <typename V,
+          typename E = std::vector<std::remove_cvref_t<duality::view_element_type_t<V>>>,
+          typename Equals = std::equal_to<>>
+inline void view_assert_infinite_multipass_backward(V&& v,
+                                                    const E& expected,
+                                                    Equals&& equals = {}) {
+    view_assert_backward_infinite(v, expected, equals);
 
     // invertibility check (backward)
     // TODO
@@ -347,11 +355,13 @@ inline void view_assert_infinite_multipass_backward(
 /// Checks if `v` as an infinite_random_access_view starts with the elements in `expected`.  The
 /// view of course has more elements than `expected`, so we only check that the first
 /// `expected.size()` elements match expect more elements to be consumable.
-template <typename V>
-inline void view_assert_infinite_random_access_forward(
-    V&& v,
-    const std::vector<std::remove_cvref_t<duality::view_element_type_t<V>>>& expected) {
-    view_assert_infinite_multipass_forward(v, expected);
+template <typename V,
+          typename E = std::vector<std::remove_cvref_t<duality::view_element_type_t<V>>>,
+          typename Equals = std::equal_to<>>
+inline void view_assert_infinite_random_access_forward(V&& v,
+                                                       const E& expected,
+                                                       Equals&& equals = {}) {
+    view_assert_infinite_multipass_forward(v, expected, equals);
 
     // forward skip(n, it)
     {
@@ -375,11 +385,13 @@ inline void view_assert_infinite_random_access_forward(
         CHECK(fit.skip(rit));
     }
 }
-template <typename V>
-inline void view_assert_infinite_random_access_backward(
-    V&& v,
-    const std::vector<std::remove_cvref_t<duality::view_element_type_t<V>>>& expected) {
-    view_assert_infinite_multipass_backward(v, expected);
+template <typename V,
+          typename E = std::vector<std::remove_cvref_t<duality::view_element_type_t<V>>>,
+          typename Equals = std::equal_to<>>
+inline void view_assert_infinite_random_access_backward(V&& v,
+                                                        const E& expected,
+                                                        Equals&& equals = {}) {
+    view_assert_infinite_multipass_backward(v, expected, equals);
 
     // backward skip(n, it)
     {
@@ -404,11 +416,13 @@ inline void view_assert_infinite_random_access_backward(
     }
 }
 
-template <typename V>
-inline void view_assert_random_access_bidirectional(
-    V&& v,
-    const std::vector<std::remove_cvref_t<duality::view_element_type_t<V>>>& expected) {
-    view_assert_multipass_bidirectional(v, expected);
+template <typename V,
+          typename E = std::vector<std::remove_cvref_t<duality::view_element_type_t<V>>>,
+          typename Equals = std::equal_to<>>
+inline void view_assert_random_access_bidirectional(V&& v,
+                                                    const E& expected,
+                                                    Equals&& equals = {}) {
+    view_assert_multipass_bidirectional(v, expected, equals);
     view_assert_sized(v, expected);
 
     // // indexing check

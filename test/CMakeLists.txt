@@ -11,6 +11,7 @@ set(TEST_LIST
   views/as_const.cpp
   views/as_input_range.cpp
   views/concat.cpp
+  views/eager_split_by.cpp
   views/eager_take.cpp
   views/filter.cpp
   views/lazy_take.cpp
