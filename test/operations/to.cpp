@@ -77,24 +77,20 @@ TEST_CASE("to operations", "[operations to]") {
 
     // associative containers
 
-    range_assert(v | views::transform([](int x) {
-                     return std::pair{x, x * 2};
-                 }) | operations::to<std::map<int, int>>(),
+    range_assert(v | views::transform([](int x) { return std::pair{x, x * 2}; }) |
+                     operations::to<std::map<int, int>>(),
                  std::vector<std::pair<const int, int>>{{1, 2}, {2, 4}, {3, 6}, {4, 8}, {5, 10}});
-    range_assert(v | views::transform([](int x) {
-                     return std::pair{x, x * 2};
-                 }) | views::filter([](std::pair<int, int> x) { return x.first % 2 == 0; }) |
+    range_assert(v | views::transform([](int x) { return std::pair{x, x * 2}; }) |
+                     views::filter([](std::pair<int, int> x) { return x.first % 2 == 0; }) |
                      operations::to<std::map<int, int>>(),
                  std::vector<std::pair<const int, int>>{{2, 4}, {4, 8}});
     range_assert_unordered(
-        v | views::transform([](int x) {
-            return std::pair{x, x * 2};
-        }) | operations::to<std::unordered_map<int, int>>(),
+        v | views::transform([](int x) { return std::pair{x, x * 2}; }) |
+            operations::to<std::unordered_map<int, int>>(),
         std::vector<std::pair<const int, int>>{{1, 2}, {2, 4}, {3, 6}, {4, 8}, {5, 10}});
-    range_assert_unordered(v | views::transform([](int x) {
-                               return std::pair{x, x * 2};
-                           }) | views::filter([](std::pair<int, int> x) {
-                               return x.first % 2 == 0;
-                           }) | operations::to<std::unordered_map<int, int>>(),
-                           std::vector<std::pair<const int, int>>{{2, 4}, {4, 8}});
+    range_assert_unordered(
+        v | views::transform([](int x) { return std::pair{x, x * 2}; }) |
+            views::filter([](std::pair<int, int> x) { return x.first % 2 == 0; }) |
+            operations::to<std::unordered_map<int, int>>(),
+        std::vector<std::pair<const int, int>>{{2, 4}, {4, 8}});
 }
