@@ -68,7 +68,7 @@ jobs:
 
     strategy:
       matrix:
-        cppstd: [20, 23]
+        cppstd: [23]
 
     steps:
     - name: Checkout
