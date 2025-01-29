@@ -246,8 +246,8 @@ class lazy_take_sentinel {
 template <forward_view V, std::integral Amount>
 class lazy_take_view {
    private:
-    V v_;
-    Amount amount_;
+    [[no_unique_address]] V v_;
+    [[no_unique_address]] Amount amount_;
 
    public:
     template <view V2>

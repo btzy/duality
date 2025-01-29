@@ -1058,7 +1058,12 @@ class concat_view<Vs...> {
             });
     }
     constexpr decltype(auto) empty() const
-        requires((... && emptyness_view<Vs>))
+        requires((infinite_view<Vs> || ...))
+    {
+        return false;
+    }
+    constexpr decltype(auto) empty() const
+        requires((... && emptyness_view<Vs>) && !(infinite_view<Vs> || ...))
     {
         return std::apply([](const auto&... vs) -> decltype(auto) { return (... && vs.empty()); },
                           vs_);
@@ -1074,7 +1079,7 @@ class concat_view<Vs...> {
             vs_);
     }
     constexpr decltype(auto) size() const
-        requires(infinite_view<Vs> || ...)
+        requires((infinite_view<Vs> || ...))
     {
         return infinite_t{};
     }

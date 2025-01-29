@@ -73,7 +73,8 @@ concept multipass_bidirectional_view = multipass_forward_view<V> && multipass_ba
                                            } -> std::same_as<decltype(v.forward_iter())>;
                                        };
 
-/// A emptyness_view is a view that has constant time emptyness check.
+/// A emptyness_view is a view that has constant time emptyness check.  Infinite views are always
+/// non-empty, and so empty() should be defined and should return false.
 template <typename V>
 concept emptyness_view = view<V> && requires(const V& v) {
     { v.empty() } -> std::convertible_to<bool>;
@@ -88,7 +89,9 @@ concept sized_view = emptyness_view<V> && requires(const V& v) {
 /// Tag type that represents an infinite size.
 struct infinite_t {};
 
-/// An infinite view is a view where iterating all elements takes infinite time.
+/// An infinite view is a view where iterating all elements takes infinite time.  (Note that an
+/// infinite view need not yield an infinite number of elements, but this doesn't actually matter
+/// because we can never reach the end of an infinite view.)
 template <typename V>
 concept infinite_view = emptyness_view<V> && requires(const V& v) {
     { v.size() } -> std::same_as<infinite_t>;

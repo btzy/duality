@@ -5,6 +5,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <duality/factories/repeat.hpp>
 #include <duality/viewifiers/forward_list.hpp>
 #include <duality/viewifiers/vector.hpp>
 #include <duality/views/filter.hpp>
@@ -50,4 +51,12 @@ TEST_CASE("filter view with function object by reference", "[view filter]") {
     static_assert(std::same_as<view_element_type_t<decltype(v)>, int&>);
     view_assert_multipass_bidirectional(views::filter(v, filter_fn), {2, 4});
     view_assert_multipass_bidirectional(v | views::filter(filter_fn), {2, 4});
+}
+
+TEST_CASE("filter view of infinite view is infinite", "[view filter]") {
+    auto v = factories::repeat(5);
+    auto res = v | views::filter([](int x) { return x % 2 == 0; });
+    CHECK_FALSE(res.empty());
+    auto size = res.size();
+    static_assert(std::same_as<decltype(size), infinite_t>);
 }

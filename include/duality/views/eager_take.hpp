@@ -28,8 +28,8 @@ namespace duality {
 template <multipass_forward_view V, std::integral Amount>
 class eager_take_view {
    private:
-    V v_;
-    Amount amount_;
+    [[no_unique_address]] V v_;
+    [[no_unique_address]] Amount amount_;
 
    public:
     template <multipass_forward_view V2>

@@ -91,8 +91,8 @@ class filter_iterator<I, F> {
 template <view V, impl::filter_function<view_element_type_t<V>> F>
 class filter_view {
    private:
-    V v_;
-    F f_;
+    [[no_unique_address]] V v_;
+    [[no_unique_address]] F f_;
 
    public:
     template <view V2, impl::filter_function<view_element_type_t<V>> F2>
@@ -118,6 +118,16 @@ class filter_view {
         return impl::filter_iterator<decltype(v_.backward_iter()),
                                      std::remove_reference_t<decltype((f_))>>(
             wrapping_construct, v_.backward_iter(), f_);
+    }
+    constexpr decltype(auto) empty() const
+        requires infinite_view<V>
+    {
+        return false;
+    }
+    constexpr decltype(auto) size() const
+        requires infinite_view<V>
+    {
+        return infinite_t{};
     }
 };
 
