@@ -1,6 +1,6 @@
 set(TEST_LIST
   view_assert.hpp
-  # actions/reverse.cpp
+  actions/reverse.cpp
   factories/iota.cpp
   factories/repeat.cpp
   factories/single.cpp

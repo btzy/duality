@@ -20,7 +20,6 @@ TEST_CASE("reverse action", "[action reverse]") {
         view_assert_random_access_bidirectional(v, {5, 4, 3, 2, 1});
         CHECK_THAT(vec, Catch::Matchers::RangeEquals({5, 4, 3, 2, 1}));
     }
-    /*
     SECTION("from view without adaptor") {
         view_assert_random_access_bidirectional(v | actions::reverse, {5, 4, 3, 2, 1});
         view_assert_random_access_bidirectional(v, {5, 4, 3, 2, 1});
@@ -41,5 +40,4 @@ TEST_CASE("reverse action", "[action reverse]") {
         view_assert_random_access_bidirectional(v, {5, 4, 3, 2, 1});
         CHECK_THAT(vec, Catch::Matchers::RangeEquals({5, 4, 3, 2, 1}));
     }
-    */
 }
