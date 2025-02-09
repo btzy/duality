@@ -1,7 +1,7 @@
 // This file is part of https://github.com/btzy/duality
 #pragma once
 
-#include <concepts>
+#include <type_traits>
 #include <utility>
 
 #include <duality/core_view.hpp>

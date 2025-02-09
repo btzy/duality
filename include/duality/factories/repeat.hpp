@@ -74,9 +74,17 @@ class repeat_forward_iterator {
         index_ = end_i.index_;
         return diff;
     }
+    constexpr Count skip(infinite_t, const repeat_backward_iterator<T, Count>& end_i) noexcept {
+        Count diff = static_cast<Count>(end_i.index_ - index_);
+        index_ = end_i.index_;
+        return diff;
+    }
     constexpr Count skip(Count count, const repeat_forward_iterator<T, Count>&) noexcept {
         index_ += count;
         return count;
+    }
+    constexpr infinite_t skip(infinite_t, const repeat_forward_iterator<T, Count>&) noexcept {
+        return {};
     }
     constexpr decltype(auto) invert() const noexcept {
         return repeat_backward_iterator<T, Count>(wrapping_construct, *value_, index_);
@@ -121,6 +129,11 @@ class repeat_backward_iterator {
             index_ -= count;
             return count;
         }
+        index_ = end_i.index_;
+        return diff;
+    }
+    constexpr Count skip(infinite_t, const repeat_forward_iterator<T, Count>& end_i) noexcept {
+        Count diff = static_cast<Count>(index_ - end_i.index_);
         index_ = end_i.index_;
         return diff;
     }

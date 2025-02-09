@@ -19,7 +19,7 @@ concept contiguous_container = requires(T& t) {
     { std::begin(t) } -> std::contiguous_iterator;
     { std::end(t) } -> std::same_as<decltype(std::begin(t))>;
 };
-}
+}  // namespace impl
 
 template <typename T>
     requires(!std::is_reference_v<T>)
@@ -77,6 +77,11 @@ class contiguous_forward_iterator {
         ptr_ = end.ptr_;
         return diff;
     }
+    constexpr size_t skip(infinite_t, const contiguous_backward_iterator<T>& end) noexcept {
+        size_t diff = static_cast<size_t>(end.ptr_ - ptr_);
+        ptr_ = end.ptr_;
+        return diff;
+    }
     constexpr contiguous_backward_iterator<T> invert() const noexcept { return {ptr_}; }
 };
 
@@ -117,6 +122,11 @@ class contiguous_backward_iterator {
             ptr_ -= count;
             return count;
         }
+        ptr_ = end.ptr_;
+        return diff;
+    }
+    constexpr size_t skip(infinite_t, const contiguous_forward_iterator<T>& end) noexcept {
+        size_t diff = static_cast<size_t>(ptr_ - end.ptr_);
         ptr_ = end.ptr_;
         return diff;
     }

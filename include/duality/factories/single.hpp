@@ -54,6 +54,11 @@ class single_forward_iterator {
         value_ = end_i.value_;
         return diff;
     }
+    constexpr size_t skip(infinite_t, const single_backward_iterator<T>& end_i) noexcept {
+        size_t diff = static_cast<size_t>(end_i.value_ - value_);
+        value_ = end_i.value_;
+        return diff;
+    }
     constexpr decltype(auto) invert() const noexcept {
         return single_backward_iterator<T>(wrapping_construct, value_);
     }
@@ -90,6 +95,11 @@ class single_backward_iterator {
             value_ -= count;
             return count;
         }
+        value_ = end_i.value_;
+        return diff;
+    }
+    constexpr size_t skip(infinite_t, const single_forward_iterator<T>& end_i) noexcept {
+        size_t diff = static_cast<size_t>(value_ - end_i.value_);
         value_ = end_i.value_;
         return diff;
     }

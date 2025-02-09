@@ -127,11 +127,29 @@ class lazy_take_forward_iterator {
         return actual_amount;
     }
     template <sentinel_for<I> S>
+    constexpr index_type skip(infinite_t, const lazy_take_backward_iterator<S, Amount>& end_i)
+        requires random_access_iterator<I>
+    {
+        // Return type is definitely not infinite_t, since lazy_take_backward_iterator can only be
+        // obtained from lazy_take_forward_iterator.
+        index_type actual_amount = i_.skip(infinite_t{}, end_i.i_);
+        amount_ -= actual_amount;
+        return actual_amount;
+    }
+    template <sentinel_for<I> S>
     constexpr index_type skip(index_type index, const lazy_take_sentinel<S>& end_i)
         requires random_access_iterator<I>
     {
         index_type requested_amount = std::min(amount_, index);
         index_type actual_amount = i_.skip(requested_amount, end_i.i_);
+        amount_ -= actual_amount;
+        return actual_amount;
+    }
+    template <sentinel_for<I> S>
+    constexpr index_type skip(infinite_t, const lazy_take_sentinel<S>& end_i)
+        requires random_access_iterator<I>
+    {
+        index_type actual_amount = i_.skip(amount_, end_i.i_);
         amount_ -= actual_amount;
         return actual_amount;
     }
@@ -215,6 +233,16 @@ class lazy_take_backward_iterator<I, Amount> {
         requires random_access_iterator<I>
     {
         index_type actual_amount = i_.skip(index, end_i.i_);
+        amount_ += actual_amount;
+        return actual_amount;
+    }
+    template <sentinel_for<I> S>
+    constexpr index_type skip(infinite_t, const lazy_take_forward_iterator<S, Amount>& end_i)
+        requires random_access_iterator<I>
+    {
+        // Return type is definitely not infinite_t, since lazy_take_backward_iterator can only be
+        // obtained from lazy_take_forward_iterator.
+        index_type actual_amount = i_.skip(infinite_t{}, end_i.i_);
         amount_ += actual_amount;
         return actual_amount;
     }

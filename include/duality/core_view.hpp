@@ -86,16 +86,20 @@ concept sized_view = emptyness_view<V> && requires(const V& v) {
     { v.size() } -> std::integral;
 };
 
-/// Tag type that represents an infinite size.
-struct infinite_t {};
-
 /// An infinite view is a view where iterating all elements takes infinite time.  (Note that an
 /// infinite view need not yield an infinite number of elements, but this doesn't actually matter
 /// because we can never reach the end of an infinite view.)
 template <typename V>
-concept infinite_view = emptyness_view<V> && requires(const V& v) {
-    { v.size() } -> std::same_as<infinite_t>;
-};
+concept infinite_view = emptyness_view<V> &&
+                        requires(const V& v) {
+                            { v.size() } -> std::same_as<infinite_t>;
+                        } &&
+                        std::same_as<impl::distance_t<decltype(std::declval<V>().forward_iter()),
+                                                      decltype(std::declval<V>().backward_iter())>,
+                                     infinite_t> &&
+                        std::same_as<impl::distance_t<decltype(std::declval<V>().backward_iter()),
+                                                      decltype(std::declval<V>().forward_iter())>,
+                                     infinite_t>;
 
 // Gets the type that this view yields.
 template <view T>
@@ -120,7 +124,8 @@ concept random_access_forward_view =
     ((sized_view<V> &&
       std::same_as<decltype(std::declval<V>().size()),
                    typename decltype(std::declval<V>().forward_iter())::index_type>) ||
-     infinite_view<V>)&&requires(V&& v) {
+     infinite_view<V>) &&
+    requires(V&& v) {
         { v.forward_iter() } -> random_access_iterator_with_sentinel<decltype(v.backward_iter())>;
     };
 
@@ -130,12 +135,13 @@ concept random_access_backward_view =
     ((sized_view<V> &&
       std::same_as<decltype(std::declval<V>().size()),
                    typename decltype(std::declval<V>().backward_iter())::index_type>) ||
-     infinite_view<V>)&&requires(V&& v) {
+     infinite_view<V>) &&
+    requires(V&& v) {
         { v.backward_iter() } -> random_access_iterator_with_sentinel<decltype(v.forward_iter())>;
     };
 
 /// A random_access_bidirectional_view is a view that has constant time access of any element by
-/// index.  It may be finite or infinite
+/// index.  It may be finite or infinite.
 template <typename V>
 concept random_access_bidirectional_view =
     multipass_bidirectional_view<V> && random_access_forward_view<V> &&
@@ -180,6 +186,7 @@ class dummy_forward_random_access_iterator {
     void skip(size_t);
     bool skip(const dummy_backward_random_access_iterator<T>&);
     size_t skip(size_t, const dummy_backward_random_access_iterator<T>&);
+    size_t skip(infinite_t, const dummy_backward_random_access_iterator<T>&) const;
     dummy_backward_random_access_iterator<T> invert() const;
 };
 template <typename T>
@@ -193,6 +200,7 @@ class dummy_backward_random_access_iterator {
     void skip(size_t);
     bool skip(const dummy_forward_random_access_iterator<T>&);
     size_t skip(size_t, const dummy_forward_random_access_iterator<T>&);
+    size_t skip(infinite_t, const dummy_forward_random_access_iterator<T>&) const;
     dummy_forward_random_access_iterator<T> invert() const;
 };
 template <typename T>

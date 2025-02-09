@@ -11,7 +11,10 @@
 #include <duality/builtin_assume.hpp>
 #include <duality/core_view.hpp>
 
-// TODO: requires new view reification
+// TODO: requires backward iteration for infinite concats.  We probably need to make the view not
+// reduce portions, and make the forward/backward iterators reduce for us (but still be templated on
+// the whole thing).  Also, for infinite concats, v.forward_iter().invert() and v.backward_iter()
+// must have different types, so we can know at compilation time that the concat is infinite.
 
 /// Implementation for views::concat.  Concatenates one or more views together.
 ///
@@ -584,6 +587,49 @@ class concat_forward_iterator<ViewTuple, Triples...> {
             amount,
             end_i);
     }
+
+   private:
+    template <size_t Index, typename Triple, typename... Triples2>
+    constexpr auto skip_impl(Triple& triple,
+                             infinite_t,
+                             const concat_backward_iterator<ViewTuple, Triples2...>& end_i) {
+        if constexpr (Index + 1 == num_views) {
+            // If we are at the last underlying view, then a valid sentinel must also be at the last
+            // underlying view.
+            return triple.current.skip(infinite_t{}, std::get<Index>(end_i.is_).current);
+        } else if (Index == end_i.is_.index()) {
+            // We are at the same underlying view as the sentinel.
+            return triple.current.skip(infinite_t{}, std::get<Index>(end_i.is_).current);
+        } else {
+            // We are not on the same underlying view (it is then assumed that we are in an
+            // earlier underlying view than the sentinel).
+
+            auto actual_amount = triple.current.skip(infinite_t{}, triple.back);
+            if constexpr (std::same_as<decltype(actual_amount), infinite_t>) {
+                return infinite_t{};
+            } else {
+                constexpr size_t NewIndex = Index + 1;
+                return actual_amount +
+                       skip_impl<NewIndex>(emplace_variant<NewIndex>(), infinite_t{}, end_i);
+            }
+        }
+    }
+
+   public:
+    template <typename... Triples2>
+        requires((... && sentinel_for<typename Triples2::Current, typename Triples::Current>))
+    constexpr auto skip(infinite_t, const concat_backward_iterator<ViewTuple, Triples2...>& end_i)
+        requires((... && random_access_iterator<typename Triples::Current>))
+    {
+        return visit_with_index(
+            []<size_t Index>(auto& triple,
+                             concat_forward_iterator* that,
+                             const concat_backward_iterator<ViewTuple, Triples2...>& e)
+                -> decltype(auto) { return that->skip_impl<Index>(triple, infinite_t{}, e); },
+            is_,
+            this,
+            end_i);
+    }
     constexpr decltype(auto) invert() const
         requires((... && multipass_iterator<typename Triples::Current>))
     {
@@ -886,6 +932,50 @@ class concat_backward_iterator<ViewTuple, Triples...> {
             is_,
             this,
             amount,
+            end_i);
+    }
+
+   private:
+    template <size_t Index, typename Triple, typename... Triples2>
+    constexpr index_type skip_impl(Triple& triple,
+                                   infinite_t,
+                                   const concat_forward_iterator<ViewTuple, Triples2...>& end_i) {
+        if constexpr (Index == 0) {
+            // If we are at the last underlying view, then a valid sentinel must also be at the last
+            // underlying view.
+            return triple.current.skip(infinite_t{}, std::get<Index>(end_i.is_).current);
+        } else if (Index == end_i.is_.index()) {
+            // We are at the same underlying view as the sentinel.
+            return triple.current.skip(infinite_t{}, std::get<Index>(end_i.is_).current);
+        } else {
+            // We are not on the same underlying view (it is then assumed that we are in an
+            // earlier underlying view than the sentinel).
+
+            auto actual_amount = triple.current.skip(infinite_t{}, triple.front);
+            if constexpr (std::same_as<decltype(actual_amount), infinite_t>) {
+                return infinite_t{};
+            } else {
+                constexpr size_t NewIndex = Index - 1;
+                return actual_amount +
+                       skip_impl<NewIndex>(emplace_variant<NewIndex>(), infinite_t{}, end_i);
+            }
+        }
+    }
+
+   public:
+    template <typename... Triples2>
+        requires((... && sentinel_for<typename Triples2::Current, typename Triples::Current>))
+    constexpr index_type skip(infinite_t,
+                              const concat_forward_iterator<ViewTuple, Triples2...>& end_i)
+        requires((... && random_access_iterator<typename Triples::Current>))
+    {
+        return visit_with_index(
+            []<size_t Index>(auto& triple,
+                             concat_backward_iterator* that,
+                             const concat_forward_iterator<ViewTuple, Triples2...>& e)
+                -> decltype(auto) { return that->skip_impl<Index>(triple, infinite_t{}, e); },
+            is_,
+            this,
             end_i);
     }
     constexpr decltype(auto) invert() const

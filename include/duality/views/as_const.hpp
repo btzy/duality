@@ -90,6 +90,12 @@ class as_const_iterator<I> {
     {
         return i_.skip(index, end_i.i_);
     }
+    template <sentinel_for<I> S>
+    constexpr auto skip(infinite_t, const as_const_iterator<S>& end_i)
+        requires random_access_iterator<I>
+    {
+        return i_.skip(infinite_t{}, end_i.i_);
+    }
     constexpr decltype(auto) invert() const
         requires multipass_iterator<I>
     {

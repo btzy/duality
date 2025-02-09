@@ -27,10 +27,10 @@ concept decrementable = std::regular<T> && requires(T& t) {
 template <typename TBegin, typename TEnd>
 concept iota_common_or_one_way =
     (impl::incrementable<std::remove_cvref_t<TBegin>> ||
-     impl::decrementable<std::remove_cvref_t<
-         TEnd>>)&&(!impl::incrementable<std::remove_cvref_t<TBegin>> ||
-                   !impl::decrementable<std::remove_cvref_t<TEnd>> ||
-                   std::same_as<std::remove_cvref_t<TBegin>, std::remove_cvref_t<TEnd>>);
+     impl::decrementable<std::remove_cvref_t<TEnd>>) &&
+    (!impl::incrementable<std::remove_cvref_t<TBegin>> ||
+     !impl::decrementable<std::remove_cvref_t<TEnd>> ||
+     std::same_as<std::remove_cvref_t<TBegin>, std::remove_cvref_t<TEnd>>);
 
 }  // namespace impl
 
@@ -135,12 +135,21 @@ class iota_forward_iterator<T, Index> {
         value_ = end_i.value_;
         return diff;
     }
+    template <std::equality_comparable_with<T> T2>
+    constexpr Index skip(infinite_t, const iota_backward_iterator<T2, Index>& end_i) noexcept
+        requires std::integral<Index>
+    {
+        Index diff = static_cast<Index>(end_i.value_ - value_);
+        value_ = end_i.value_;
+        return diff;
+    }
     constexpr Index skip(Index index, const iota_sentinel&) noexcept
         requires std::integral<Index>
     {
         value_ += index;
         return index;
     }
+    constexpr infinite_t skip(infinite_t, const iota_sentinel&) noexcept { return {}; }
     constexpr decltype(auto) invert() const noexcept {
         return iota_backward_iterator<T, Index>(wrapping_construct, value_);
     }
@@ -206,6 +215,14 @@ class iota_backward_iterator<T, Index> {
             value_ -= index;
             return index;
         }
+        value_ = end_i.value_;
+        return diff;
+    }
+    template <std::equality_comparable_with<T> T2>
+    constexpr Index skip(infinite_t, const iota_forward_iterator<T2, Index>& end_i) noexcept
+        requires std::integral<Index>
+    {
+        Index diff = static_cast<Index>(value_ - end_i.value_);
         value_ = end_i.value_;
         return diff;
     }

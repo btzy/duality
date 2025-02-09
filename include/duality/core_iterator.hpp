@@ -10,10 +10,16 @@
 
 namespace duality {
 
+/// Tag type that represents an infinite size.
+struct infinite_t {};
+constexpr inline infinite_t infinite;
+
 namespace impl {
 template <typename T>
 concept non_void = !std::same_as<T, void>;
-}
+template <typename I, typename S>
+using distance_t = decltype(std::declval<I>().skip(infinite_t{}, std::declval<const S>()));
+}  // namespace impl
 
 /// Concept for an iterator.
 template <typename I>
@@ -69,8 +75,12 @@ concept random_access_iterator =
         {
             i.skip(index, i.invert())
         } -> std::same_as<typename I::index_type>;  // returns the amount skipped
+        {
+            i.skip(infinite_t{}, i.invert())
+        } -> std::same_as<typename I::index_type>;  // returns the amount skipped
         std::declval<decltype(i.invert())>().skip(index);
         std::declval<decltype(i.invert())>().skip(index, static_cast<const I&>(i));
+        std::declval<decltype(i.invert())>().skip(static_cast<const I&>(i));
     };
 
 /// Concept for a random access iterator (i.e. one that can skip any number of elements in constant
@@ -80,7 +90,9 @@ concept random_access_iterator_with_sentinel =
     random_access_iterator<I> && sentinel_for<S, I> &&
     requires(I&& i, const S& s, typename I::index_type index) {
         { i.skip(index, s) } -> std::same_as<typename I::index_type>;  // returns the amount skipped
-    };
+    } &&
+    (std::same_as<impl::distance_t<I, S>, typename I::index_type> ||
+     std::same_as<impl::distance_t<I, S>, infinite_t>);
 
 /// Gets the type that this iterator yields.
 template <iterator I>

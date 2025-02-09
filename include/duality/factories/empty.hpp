@@ -49,8 +49,11 @@ class empty_iterator {
         // Do nothing.  If count==0, then this is a well-defined no-op.  Otherwise, this is UB.
     }
     constexpr size_t skip(size_t, const empty_iterator<T>&) noexcept {
-        // If count==0, then this is a no-op and always succeeds.  Otherwise, we will hit the end
-        // and so we return false.
+        // We are always unable to consume any elements, since there are none to begin with.
+        return 0;
+    }
+    constexpr size_t skip(infinite_t, const empty_iterator<T>&) noexcept {
+        // We are always already at the end.
         return 0;
     }
     constexpr empty_iterator<T> invert() const noexcept {

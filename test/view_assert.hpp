@@ -352,6 +352,11 @@ inline void view_assert_infinite_multipass_backward(V&& v,
     // TODO
 }
 
+template <typename T>
+inline void assert_infinite(T) {
+    static_assert(std::same_as<T, duality::infinite_t>);
+}
+
 /// Checks if `v` as an infinite_random_access_view starts with the elements in `expected`.  The
 /// view of course has more elements than `expected`, so we only check that the first
 /// `expected.size()` elements match expect more elements to be consumable.
@@ -384,6 +389,27 @@ inline void view_assert_infinite_random_access_forward(V&& v,
         fit.skip(expected.size() - half);
         CHECK(fit.skip(rit));
     }
+
+    // forward skip(infinite, it)
+    {
+        const auto rit = v.backward_iter();
+        {
+            auto fit = v.forward_iter();
+            assert_infinite(fit.skip(duality::infinite_t{}, rit));
+        }
+        {
+            auto fit = v.forward_iter();
+            fit.skip();
+            assert_infinite(fit.skip(duality::infinite_t{}, rit));
+        }
+        {
+            auto fit = v.forward_iter();
+            fit.skip(expected.size());
+            auto inv = fit.invert();
+            auto fit2 = v.forward_iter();
+            CHECK(fit2.skip(duality::infinite_t{}, inv) == expected.size());
+        }
+    }
 }
 template <typename V,
           typename E = std::vector<std::remove_cvref_t<duality::view_element_type_t<V>>>,
@@ -413,6 +439,27 @@ inline void view_assert_infinite_random_access_backward(V&& v,
         rit.skip(half);
         rit.skip(expected.size() - half);
         CHECK(rit.skip(fit));
+    }
+
+    // backward skip(infinite, it)
+    {
+        const auto fit = v.forward_iter();
+        {
+            auto rit = v.backward_iter();
+            assert_infinite(rit.skip(duality::infinite_t{}, fit));
+        }
+        {
+            auto rit = v.backward_iter();
+            rit.skip();
+            assert_infinite(rit.skip(duality::infinite_t{}, fit));
+        }
+        {
+            auto rit = v.backward_iter();
+            rit.skip(expected.size());
+            auto inv = rit.invert();
+            auto rit2 = v.backward_iter();
+            CHECK(rit2.skip(duality::infinite_t{}, inv) == expected.size());
+        }
     }
 }
 
@@ -452,6 +499,36 @@ inline void view_assert_random_access_bidirectional(V&& v,
         CHECK_FALSE(fit.skip(rit));
     }
 
+    // forward skip(infinite, it)
+    {
+        const auto rit = v.backward_iter();
+        {
+            auto fit = v.forward_iter();
+            CHECK(fit.skip(duality::infinite_t{}, rit) == expected.size());
+        }
+        if (!expected.empty()) {
+            auto fit = v.forward_iter();
+            fit.skip();
+            CHECK(fit.skip(duality::infinite_t{}, rit) == expected.size() - 1);
+        }
+        {
+            auto fit = v.forward_iter();
+            fit.skip(expected.size());
+            auto inv = fit.invert();
+            auto fit2 = v.forward_iter();
+            CHECK(fit2.skip(duality::infinite_t{}, inv) == expected.size());
+            CHECK_FALSE(fit2.skip(inv));
+        }
+        {
+            auto fit = v.forward_iter();
+            fit.skip(expected.size() / 2);
+            auto inv = fit.invert();
+            auto fit2 = v.forward_iter();
+            CHECK(fit2.skip(duality::infinite_t{}, inv) == expected.size() / 2);
+            CHECK_FALSE(fit2.skip(inv));
+        }
+    }
+
     // backward skip(n, it)
     {
         const auto fit = v.forward_iter();
@@ -472,5 +549,35 @@ inline void view_assert_random_access_bidirectional(V&& v,
         rit.skip(half);
         rit.skip(expected.size() - half);
         CHECK_FALSE(rit.skip(fit));
+    }
+
+    // backward skip(infinite, it)
+    {
+        const auto fit = v.forward_iter();
+        {
+            auto rit = v.backward_iter();
+            CHECK(rit.skip(duality::infinite_t{}, fit) == expected.size());
+        }
+        if (!expected.empty()) {
+            auto rit = v.backward_iter();
+            rit.skip();
+            CHECK(rit.skip(duality::infinite_t{}, fit) == expected.size() - 1);
+        }
+        {
+            auto rit = v.backward_iter();
+            rit.skip(expected.size());
+            auto inv = rit.invert();
+            auto rit2 = v.backward_iter();
+            CHECK(rit2.skip(duality::infinite_t{}, inv) == expected.size());
+            CHECK_FALSE(rit2.skip(inv));
+        }
+        {
+            auto rit = v.backward_iter();
+            rit.skip(expected.size() / 2);
+            auto inv = rit.invert();
+            auto rit2 = v.backward_iter();
+            CHECK(rit2.skip(duality::infinite_t{}, inv) == expected.size() / 2);
+            CHECK_FALSE(rit2.skip(inv));
+        }
     }
 }

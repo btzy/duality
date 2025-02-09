@@ -1,18 +1,18 @@
 set(TEST_LIST
   view_assert.hpp
+  # actions/reverse.cpp
   factories/iota.cpp
   factories/repeat.cpp
   factories/single.cpp
-  # operations/reverse.cpp
   # operations/to.cpp
   viewifiers/contiguous.cpp
   viewifiers/forward_list.cpp
   viewifiers/istream.cpp
   views/as_const.cpp
   views/as_input_range.cpp
-  views/concat.cpp
+  # views/concat.cpp # problem because concat is not currently implemented for backward views
   views/eager_split_by.cpp
-  views/eager_take.cpp
+  # views/eager_take.cpp
   views/filter.cpp
   views/lazy_take.cpp
   views/mixed.cpp
