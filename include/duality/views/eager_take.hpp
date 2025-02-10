@@ -19,7 +19,7 @@
 /// eager_take view is the same type as the forward iterator of the underlying view, and the
 /// backward iterator is the same type as the inverted forward iterator of the underlying view.
 ///
-/// This view differs from lazy_take in what backward_iter() does.  eager_take computes the position
+/// This view differs from take in what backward_iter() does.  eager_take computes the position
 /// of the backward iterator in the call to backward_iter().  This is constant time for iterators
 /// that satisfy random_access_iterator, but is linear time otherwise.
 

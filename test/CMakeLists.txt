@@ -14,10 +14,10 @@ set(TEST_LIST
   views/eager_split_by.cpp
   # views/eager_take.cpp
   views/filter.cpp
-  views/lazy_take.cpp
   views/mixed.cpp
   # views/range_based_for_loop.cpp
   views/reverse.cpp
+  views/take.cpp
   views/transform.cpp
   )
 
