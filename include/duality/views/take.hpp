@@ -328,7 +328,7 @@ template <forward_view V2, std::integral Amount>
 take_view(wrapping_construct_t, V2&& v, Amount amount) -> take_view<V2, Amount>;
 
 namespace impl {
-template <std::integral Amount = std::size_t>
+template <std::integral Amount, std::integral DefaultAmount>
 struct take_adaptor {
     template <forward_view V>
     constexpr auto operator()(V&& v) const {
@@ -336,15 +336,17 @@ struct take_adaptor {
             return take_view(
                 wrapping_construct, std::forward<V>(v), static_cast<view_index_type_t<V>>(amount));
         } else {
-            return take_view(wrapping_construct, std::forward<V>(v), amount);
+            return take_view(
+                wrapping_construct, std::forward<V>(v), static_cast<DefaultAmount>(amount));
         }
     }
     [[no_unique_address]] Amount amount;
 };
+template <std::integral DefaultAmount>
 struct take {
     template <forward_view V>
         requires std::same_as<view_index_type_t<V>, no_index_type_t>
-    constexpr DUALITY_STATIC_CALL auto operator()(V&& v, size_t amount) DUALITY_CONST_CALL {
+    constexpr DUALITY_STATIC_CALL auto operator()(V&& v, DefaultAmount amount) DUALITY_CONST_CALL {
         return take_view(wrapping_construct, std::forward<V>(v), amount);
     }
     template <forward_view V>
@@ -353,14 +355,15 @@ struct take {
                                                   view_index_type_t<V> amount) DUALITY_CONST_CALL {
         return take_view(wrapping_construct, std::forward<V>(v), amount);
     }
-    constexpr DUALITY_STATIC_CALL auto operator()(size_t amount) DUALITY_CONST_CALL {
-        return take_adaptor<size_t>{amount};
+    template <std::integral Amount>
+    constexpr DUALITY_STATIC_CALL auto operator()(Amount amount) DUALITY_CONST_CALL {
+        return take_adaptor<Amount, DefaultAmount>{amount};
     }
 };
 }  // namespace impl
 
 namespace views {
-constexpr inline impl::take take;
+constexpr inline impl::take<std::size_t> take;
 }
 
 }  // namespace duality
