@@ -6,7 +6,6 @@
 // view into itself.
 
 #include <concepts>
-#include <new>
 #include <type_traits>
 
 // Note: compatibility and wrapping_construct aren't actually used in this file, but they're
@@ -221,7 +220,7 @@ template <typename A, typename T>
 concept adaptor = std::invocable<A, impl::dummy_random_access_view<T>>;
 
 template <view V, adaptor<view_element_type_t<V>> A>
-decltype(auto) operator|(V&& v, A&& a) {
+constexpr decltype(auto) operator|(V&& v, A&& a) {
     return std::forward<A>(a)(std::forward<V>(v));
 }
 
