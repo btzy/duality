@@ -5,7 +5,9 @@
 // something that satisfies std::input_range, so that it can be used with Ranges.
 
 #include <iterator>
+#include <new>
 #include <utility>
+
 
 #include <duality/core_view.hpp>
 

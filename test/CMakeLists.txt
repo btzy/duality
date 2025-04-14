@@ -5,6 +5,7 @@ set(TEST_LIST
   factories/repeat.cpp
   factories/single.cpp
   # operations/to.cpp
+  stage_views/join.cpp
   viewifiers/contiguous.cpp
   viewifiers/forward_list.cpp
   viewifiers/istream.cpp
