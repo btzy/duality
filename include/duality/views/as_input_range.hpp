@@ -8,7 +8,6 @@
 #include <new>
 #include <utility>
 
-
 #include <duality/core_view.hpp>
 
 namespace duality {

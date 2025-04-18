@@ -51,7 +51,7 @@ class basic_istream_forward_iterator {
         : stream_(std::exchange(other.stream_, nullptr)) {}
     constexpr basic_istream_forward_iterator& operator=(
         basic_istream_forward_iterator&& other) noexcept {
-        stream_(std::exchange(other.stream_, nullptr));
+        stream_ = std::exchange(other.stream_, nullptr);
     }
 
     using index_type = no_index_type_t;
