@@ -102,13 +102,13 @@ class join_forward_iterator {
                                     join_forward_view_stage<I>& stage) noexcept
         : stage_(&stage), started_(false) {}
 
-    constexpr auto& inner_iter() { return *std::launder(&cache_it_); }
-    constexpr auto& inner_end() { return *std::launder(&stage_->cache_end.filled); }
-    constexpr auto& inner_cache() { return *std::launder(&stage_->cache.filled); }
-    constexpr auto& inner_iter_unlaundered() { return cache_it_; }
-    constexpr auto& inner_end_unlaundered() { return stage_->cache_end.filled; }
-    constexpr auto& inner_cache_unlaundered() { return stage_->cache.filled; }
-    constexpr auto& outer_iter() { return stage_->i; }
+    constexpr auto& inner_iter() noexcept { return *std::launder(&cache_it_); }
+    constexpr auto& inner_end() noexcept { return *std::launder(&stage_->cache_end.filled); }
+    constexpr auto& inner_cache() noexcept { return *std::launder(&stage_->cache.filled); }
+    constexpr auto& inner_iter_unlaundered() noexcept { return cache_it_; }
+    constexpr auto& inner_end_unlaundered() noexcept { return stage_->cache_end.filled; }
+    constexpr auto& inner_cache_unlaundered() noexcept { return stage_->cache.filled; }
+    constexpr auto& outer_iter() noexcept { return stage_->i; }
 
    public:
     constexpr join_forward_iterator() noexcept : stage_(nullptr), started_(false) {};
@@ -510,7 +510,7 @@ class join_forward_view {
                                 V2&& v) noexcept(std::is_nothrow_constructible_v<V, V2>)
         : v_(std::forward<V2>(v)), stage_{.i = v_.forward_iter()} {}
 
-    constexpr decltype(auto) forward_iter() {
+    constexpr decltype(auto) forward_iter() noexcept {
         return join_forward_iterator<I>(wrapping_construct, stage_);
     }
     constexpr decltype(auto) backward_iter() {
@@ -545,6 +545,61 @@ class join_forward_stage_view {
 
 template <impl::forward_joinable_view V2>
 join_forward_stage_view(wrapping_construct_t, V2&& v) -> join_forward_stage_view<V2>;
+
+namespace impl {
+
+template <bidirectional_joinable_view V>
+class join_bidirectional_view {
+   private:
+    // usually a reference unless the join_forward_stage_view is an rvalue
+    [[no_unique_address]] V v_;
+    using ForwardIt = decltype(std::declval<V>().forward_iter());
+    using BackwardIt = decltype(std::declval<V>().backward_iter());
+    [[no_unique_address]] join_bidirectional_view_stage<ForwardIt, BackwardIt> stage_;
+
+   public:
+    template <bidirectional_joinable_view V2>
+    constexpr join_bidirectional_view(wrapping_construct_t,
+                                      V2&& v) noexcept(std::is_nothrow_constructible_v<V, V2>)
+        : v_(std::forward<V2>(v)),
+          stage_{.forward_it = v_.forward_iter(), .backward_it = v.backward(iter())} {}
+
+    constexpr decltype(auto) forward_iter() noexcept {
+        return join_bidirectional_forward_iterator<ForwardIt>(wrapping_construct, stage_);
+    }
+    constexpr decltype(auto) backward_iter() noexcept {
+        return join_bidirectional_backward_iterator<BackwardIt>(wrapping_construct, stage_);
+    }
+};
+
+template <bidirectional_joinable_view V2>
+join_bidirectional_view(wrapping_construct_t, V2&& v) -> join_bidirectional_view<V2>;
+
+}  // namespace impl
+
+template <impl::bidirectional_joinable_view V>
+class join_bidirectional_stage_view {
+   private:
+    [[no_unique_address]] V v_;
+
+   public:
+    template <impl::bidirectional_joinable_view V2>
+    constexpr join_bidirectional_stage_view(wrapping_construct_t,
+                                            V2&& v) noexcept(std::is_nothrow_constructible_v<V, V2>)
+        : v_(std::forward<V2>(v)) {}
+
+    constexpr auto stage() & { return impl::join_bidirectional_view(wrapping_construct, v_); }
+    constexpr auto stage() const& { return impl::join_bidirectional_view(wrapping_construct, v_); }
+    constexpr auto stage() && {
+        return impl::join_bidirectional_view(wrapping_construct, std::move(v_));
+    }
+    constexpr auto stage() const&& {
+        return impl::join_bidirectional_view(wrapping_construct, std::move(v_));
+    }
+};
+
+template <impl::bidirectional_joinable_view V2>
+join_bidirectional_stage_view(wrapping_construct_t, V2&& v) -> join_bidirectional_stage_view<V2>;
 
 namespace impl {
 struct join_forward_s_adaptor {
@@ -588,11 +643,82 @@ struct join_backward_s {
         return join_backward_s_adaptor{};
     }
 };
+
+struct join_s_adaptor {
+    template <forward_joinable_view V>
+    constexpr DUALITY_STATIC_CALL auto operator()(V&& v) DUALITY_CONST_CALL {
+        return stage_views::join_forward(std::forward<V>(v));
+    }
+    template <backward_joinable_view V>
+    constexpr DUALITY_STATIC_CALL auto operator()(V&& v) DUALITY_CONST_CALL {
+        return stage_views::join_backward(std::forward<V>(v));
+    }
+    template <bidirectional_joinable_view V>
+    constexpr DUALITY_STATIC_CALL auto operator()(V&& v) DUALITY_CONST_CALL {
+        return join_bidirectional_stage_view(wrapping_construct, std::forward<V>(v));
+    }
+};
+struct join_s {
+    template <forward_joinable_view V>
+    constexpr DUALITY_STATIC_CALL auto operator()(V&& v) DUALITY_CONST_CALL {
+        return stage_views::join_forward(std::forward<V>(v));
+    }
+    template <backward_joinable_view V>
+    constexpr DUALITY_STATIC_CALL auto operator()(V&& v) DUALITY_CONST_CALL {
+        return stage_views::join_backward(std::forward<V>(v));
+    }
+    template <bidirectional_joinable_view V>
+    constexpr DUALITY_STATIC_CALL auto operator()(V&& v) DUALITY_CONST_CALL {
+        return join_bidirectional_stage_view(wrapping_construct, std::forward<V>(v));
+    }
+    constexpr DUALITY_STATIC_CALL auto operator()() DUALITY_CONST_CALL { return join_adaptor{}; }
+};
 }  // namespace impl
 
 namespace stage_views {
 constexpr inline impl::join_forward_s join_forward;
 constexpr inline impl::join_backward_s join_backward;
+constexpr inline impl::join_s join;
 }  // namespace stage_views
+
+// namespace impl {
+
+// template <joinable_view V>
+// class join_view {
+//    private:
+//     struct empty_t {};
+//     [[no_unique_address]] V v_;
+//     [[no_unique_address]] std::conditional_t<forward_view<V> &&
+//                                                  forward_view<view_element_type_t<V>>,
+//                                              view_element_type_t<V>,
+//                                              empty_t> forward_cache;
+//     [[no_unique_address]] std::conditional_t<backward_view<V> &&
+//                                                  backward_view<view_element_type_t<V>>,
+//                                              view_element_type_t<V>,
+//                                              empty_t> backward_cache;
+//     // TODO the caches will be empty (unconstructed) at the start, and one will be empty when the
+//     // outer iterator has ended
+//     // consider specializing for forward-only and backward-only versions for efficiency.
+// };
+
+// }  // namespace impl
+
+// template <joinable_view V>
+// class join_stage_view {
+//    private:
+//     [[no_unique_address]] V v_;
+
+//    public:
+//     template <joinable_view V2>
+//     constexpr join_stage_view(wrapping_construct_t,
+//                               V2&& v) noexcept(std::is_nothrow_constructible_v<V, V2>)
+//         : v_(std::forward<V2>(v)) {}
+
+//     constexpr auto stage() & { return join_forward_view(wrapping_construct, v_); }
+//     constexpr auto stage() const& { return join_forward_view(wrapping_construct, v_); }
+//     constexpr auto stage() && { return join_forward_view(wrapping_construct, std::move(v_)); }
+//     constexpr auto stage() const&& { return join_forward_view(wrapping_construct, std::move(v_));
+//     }
+// };
 
 }  // namespace duality
