@@ -8,6 +8,8 @@
 #include <utility>
 
 #include <duality/core_stage_view.hpp>
+#include <duality/views/reverse.hpp>
+#include <duality/views/transform.hpp>
 
 // Note: Unnamed unions currently don't respect [[no_unique_address]], but it isn't clear if it is
 // meant to work.
@@ -560,10 +562,37 @@ struct join_forward_s {
         return join_forward_s_adaptor{};
     }
 };
+
+struct join_backward_s_adaptor {
+    template <backward_joinable_view V>
+    constexpr DUALITY_STATIC_CALL auto operator()(V&& v) DUALITY_CONST_CALL {
+        return join_forward_stage_view(wrapping_construct,
+                                       std::forward<V>(v) | views::transform([](auto&& subview) {
+                                           return std::forward<decltype(subview)>(subview) |
+                                                  views::reverse();
+                                       }) | views::reverse()) |
+               views::reverse();
+    }
+};
+struct join_backward_s {
+    template <backward_joinable_view V>
+    constexpr DUALITY_STATIC_CALL auto operator()(V&& v) DUALITY_CONST_CALL {
+        return join_forward_stage_view(wrapping_construct,
+                                       std::forward<V>(v) | views::transform([](auto&& subview) {
+                                           return std::forward<decltype(subview)>(subview) |
+                                                  views::reverse();
+                                       }) | views::reverse()) |
+               views::reverse();
+    }
+    constexpr DUALITY_STATIC_CALL auto operator()() DUALITY_CONST_CALL {
+        return join_backward_s_adaptor{};
+    }
+};
 }  // namespace impl
 
 namespace stage_views {
 constexpr inline impl::join_forward_s join_forward;
-}
+constexpr inline impl::join_backward_s join_backward;
+}  // namespace stage_views
 
 }  // namespace duality

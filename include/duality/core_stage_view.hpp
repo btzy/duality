@@ -44,7 +44,7 @@ adapted_stage_view(S2&& s, A2&& a) -> adapted_stage_view<S2, A2>;
 
 template <stage_view S, adaptor<view_element_type_t<decltype(std::declval<S>().stage())>> A>
 constexpr decltype(auto) operator|(S&& s, A&& a) {
-    adapted_stage_view(std::forward<S>(s), std::forward<A>(a));
+    return adapted_stage_view(std::forward<S>(s), std::forward<A>(a));
 }
 
 template <typename S>

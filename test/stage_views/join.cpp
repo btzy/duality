@@ -14,17 +14,26 @@
 
 using namespace duality;
 
-TEST_CASE("forward_join stage view", "[stage_view forward_join]") {
+TEST_CASE("forward_join stage view and backward_join stage view",
+          "[stage_view forward_join backward_join]") {
     {
         auto triangle_view = factories::iota(static_cast<size_t>(1), static_cast<size_t>(6)) |
                              views::transform([](size_t x) {
                                  // need std::move to make iota take it by value
                                  return factories::iota(static_cast<size_t>(0), std::move(x));
                              });
-        auto joined_stage_view = triangle_view | stage_views::join_forward();
+        auto joined_forward_stage_view = triangle_view | stage_views::join_forward();
         view_assert_forward_singlepass(
             [&] {
-                auto stage = joined_stage_view.stage();
+                auto stage = joined_forward_stage_view.stage();
+                static_assert(std::same_as<view_element_type_t<decltype(stage)>, size_t>);
+                return stage;
+            },
+            {0, 0, 1, 0, 1, 2, 0, 1, 2, 3, 0, 1, 2, 3, 4});
+        auto joined_backward_stage_view = triangle_view | stage_views::join_backward();
+        view_assert_backward_singlepass(
+            [&] {
+                auto stage = joined_backward_stage_view.stage();
                 static_assert(std::same_as<view_element_type_t<decltype(stage)>, size_t>);
                 return stage;
             },
@@ -36,40 +45,83 @@ TEST_CASE("forward_join stage view", "[stage_view forward_join]") {
                                  // need std::move to make iota take it by value
                                  return factories::iota(static_cast<size_t>(0), std::move(x));
                              });
-        auto joined_stage_view = std::move(triangle_view) | stage_views::join_forward();
+        auto joined_forward_stage_view = std::move(triangle_view) | stage_views::join_forward();
         view_assert_forward_singlepass(
             [&] {
-                auto stage = joined_stage_view.stage();
+                auto stage = joined_forward_stage_view.stage();
+                static_assert(std::same_as<view_element_type_t<decltype(stage)>, size_t>);
+                return stage;
+            },
+            {0, 0, 1, 0, 1, 2, 0, 1, 2, 3, 0, 1, 2, 3, 4});
+        auto triangle_view2 = factories::iota(static_cast<size_t>(1), static_cast<size_t>(6)) |
+                              views::transform([](size_t x) {
+                                  // need std::move to make iota take it by value
+                                  return factories::iota(static_cast<size_t>(0), std::move(x));
+                              });
+        auto joined_backward_stage_view = std::move(triangle_view2) | stage_views::join_backward();
+        view_assert_backward_singlepass(
+            [&] {
+                auto stage = joined_backward_stage_view.stage();
                 static_assert(std::same_as<view_element_type_t<decltype(stage)>, size_t>);
                 return stage;
             },
             {0, 0, 1, 0, 1, 2, 0, 1, 2, 3, 0, 1, 2, 3, 4});
     }
     {
-        auto joined_stage_view = factories::iota(static_cast<size_t>(1), static_cast<size_t>(6)) |
-                                 views::transform([](size_t x) {
-                                     // need std::move to make iota take it by value
-                                     return factories::iota(static_cast<size_t>(0), std::move(x));
-                                 }) |
-                                 stage_views::join_forward();
+        auto joined_forward_stage_view =
+            factories::iota(static_cast<size_t>(1), static_cast<size_t>(6)) |
+            views::transform([](size_t x) {
+                // need std::move to make iota take it by value
+                return factories::iota(static_cast<size_t>(0), std::move(x));
+            }) |
+            stage_views::join_forward();
         view_assert_forward_singlepass(
             [&] {
-                auto stage = joined_stage_view.stage();
+                auto stage = joined_forward_stage_view.stage();
+                static_assert(std::same_as<view_element_type_t<decltype(stage)>, size_t>);
+                return stage;
+            },
+            {0, 0, 1, 0, 1, 2, 0, 1, 2, 3, 0, 1, 2, 3, 4});
+        auto joined_backward_stage_view =
+            factories::iota(static_cast<size_t>(1), static_cast<size_t>(6)) |
+            views::transform([](size_t x) {
+                // need std::move to make iota take it by value
+                return factories::iota(static_cast<size_t>(0), std::move(x));
+            }) |
+            stage_views::join_backward();
+        view_assert_backward_singlepass(
+            [&] {
+                auto stage = joined_backward_stage_view.stage();
                 static_assert(std::same_as<view_element_type_t<decltype(stage)>, size_t>);
                 return stage;
             },
             {0, 0, 1, 0, 1, 2, 0, 1, 2, 3, 0, 1, 2, 3, 4});
     }
     {
-        auto joined_stage_view = factories::iota(static_cast<size_t>(1), static_cast<size_t>(6)) |
-                                 views::transform([](size_t x) {
-                                     // need std::move to make iota take it by value
-                                     return factories::iota(static_cast<size_t>(0), std::move(x));
-                                 }) |
-                                 stage_views::join_forward();
+        auto joined_forward_stage_view =
+            factories::iota(static_cast<size_t>(1), static_cast<size_t>(6)) |
+            views::transform([](size_t x) {
+                // need std::move to make iota take it by value
+                return factories::iota(static_cast<size_t>(0), std::move(x));
+            }) |
+            stage_views::join_forward();
         view_assert_forward_singlepass(
             [&] {
-                auto stage = std::move(joined_stage_view).stage();
+                auto stage = std::move(joined_forward_stage_view).stage();
+                static_assert(std::same_as<view_element_type_t<decltype(stage)>, size_t>);
+                return stage;
+            },
+            {0, 0, 1, 0, 1, 2, 0, 1, 2, 3, 0, 1, 2, 3, 4});
+        auto joined_backward_stage_view =
+            factories::iota(static_cast<size_t>(1), static_cast<size_t>(6)) |
+            views::transform([](size_t x) {
+                // need std::move to make iota take it by value
+                return factories::iota(static_cast<size_t>(0), std::move(x));
+            }) |
+            stage_views::join_backward();
+        view_assert_backward_singlepass(
+            [&] {
+                auto stage = std::move(joined_backward_stage_view).stage();
                 static_assert(std::same_as<view_element_type_t<decltype(stage)>, size_t>);
                 return stage;
             },
@@ -84,6 +136,19 @@ TEST_CASE("forward_join stage view", "[stage_view forward_join]") {
                                   return factories::iota(static_cast<size_t>(0), std::move(x));
                               }) |
                               stage_views::join_forward())
+                                 .stage();
+                static_assert(std::same_as<view_element_type_t<decltype(stage)>, size_t>);
+                return stage;
+            },
+            {0, 0, 1, 0, 1, 2, 0, 1, 2, 3, 0, 1, 2, 3, 4});
+        view_assert_backward_singlepass(
+            [&] {
+                auto stage = (factories::iota(static_cast<size_t>(1), static_cast<size_t>(6)) |
+                              views::transform([](size_t x) {
+                                  // need std::move to make iota take it by value
+                                  return factories::iota(static_cast<size_t>(0), std::move(x));
+                              }) |
+                              stage_views::join_backward())
                                  .stage();
                 static_assert(std::same_as<view_element_type_t<decltype(stage)>, size_t>);
                 return stage;
@@ -139,4 +204,33 @@ TEST_CASE("forward_join stage view empty", "[stage_view forward_join]") {
             return stage;
         },
         {});
+}
+
+TEST_CASE("forward_join stage view and backward_join stage view with more views over them",
+          "[stage_view forward_join backward_join]") {
+    {
+        auto triangle_view = factories::iota(static_cast<size_t>(1), static_cast<size_t>(6)) |
+                             views::transform([](size_t x) {
+                                 // need std::move to make iota take it by value
+                                 return factories::iota(static_cast<size_t>(0), std::move(x));
+                             });
+        auto forward_complex_view = triangle_view | stage_views::join_forward() |
+                                    views::transform([](size_t x) { return x * 2; });
+        view_assert_forward_singlepass(
+            [&] {
+                auto stage = forward_complex_view.stage();
+                static_assert(std::same_as<view_element_type_t<decltype(stage)>, size_t>);
+                return stage;
+            },
+            {0, 0, 2, 0, 2, 4, 0, 2, 4, 6, 0, 2, 4, 6, 8});
+        auto backward_complex_view = triangle_view | stage_views::join_backward() |
+                                     views::transform([](size_t x) { return x * 2; });
+        view_assert_backward_singlepass(
+            [&] {
+                auto stage = backward_complex_view.stage();
+                static_assert(std::same_as<view_element_type_t<decltype(stage)>, size_t>);
+                return stage;
+            },
+            {0, 0, 2, 0, 2, 4, 0, 2, 4, 6, 0, 2, 4, 6, 8});
+    }
 }

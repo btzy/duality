@@ -34,18 +34,18 @@ class reverse_view {
     }
 };
 
-template <bidirectional_view V2>
+template <view V2>
 reverse_view(wrapping_construct_t, V2&& v) -> reverse_view<V2>;
 
 namespace impl {
 struct reverse_adaptor {
-    template <bidirectional_view V>
+    template <view V>
     constexpr DUALITY_STATIC_CALL auto operator()(V&& v) DUALITY_CONST_CALL {
         return reverse_view(wrapping_construct, std::forward<V>(v));
     }
 };
 struct reverse {
-    template <bidirectional_view V>
+    template <view V>
     constexpr DUALITY_STATIC_CALL auto operator()(V&& v) DUALITY_CONST_CALL {
         return reverse_view(wrapping_construct, std::forward<V>(v));
     }
