@@ -1,11 +1,13 @@
 // This file is part of https://github.com/btzy/duality
 #pragma once
 
+#include <algorithm>
 #include <type_traits>
 #include <utility>
 #include <vector>
 
 #include <duality/core_view.hpp>
+#include <duality/views/reverse.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -58,6 +60,18 @@ inline void view_assert_forward_singlepass(
         }
         CHECK_FALSE(fit.skip(v.backward_iter()));
     }
+}
+
+template <typename ViewMaker>
+inline void view_assert_backward_singlepass(
+    ViewMaker&& view_maker,
+    const std::vector<
+        std::remove_cvref_t<duality::view_element_type_t<std::invoke_result_t<ViewMaker>>>>&
+        expected) {
+    auto reversed = expected;
+    std::reverse(reversed.begin(), reversed.end());
+    view_assert_forward_singlepass([&] { return view_maker() | duality::views::reverse(); },
+                                   reversed);
 }
 
 template <typename V,
